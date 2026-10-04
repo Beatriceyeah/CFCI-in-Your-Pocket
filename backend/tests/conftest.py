@@ -20,7 +20,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine  # noqa: E4
 from app.core.config import get_settings  # noqa: E402
 from app.core.security import create_access_token  # noqa: E402
 from app.data.db import get_session  # noqa: E402
-from app.data.models import User  # noqa: E402
+from app.data.models import Product, User  # noqa: E402
 from app.main import create_app  # noqa: E402
 
 
@@ -58,6 +58,25 @@ async def client(app: FastAPI) -> AsyncIterator[AsyncClient]:
     transport = ASGITransport(app=app, raise_app_exceptions=False)
     async with AsyncClient(transport=transport, base_url="http://test") as c:
         yield c
+
+
+VALID_PRODUCT = {
+    "name": "Loom",
+    "one_liner": "Clinical trial matching in minutes",
+    "cover_image_url": "https://example.com/loom.png",
+    "demo_video_url": "https://example.com/loom.mp4",
+    "brief": "Loom helps research teams find eligible patients faster.",
+    "category": "health",
+}
+
+
+async def make_product(db_session, owner_id: uuid.UUID, **overrides) -> Product:
+    """Insert a product directly, e.g. to set a status the API doesn't expose yet."""
+    fields = {**VALID_PRODUCT, "status": "live", **overrides}
+    product = Product(owner_id=owner_id, **fields)
+    db_session.add(product)
+    await db_session.commit()
+    return product
 
 
 MakeUser = Callable[..., Awaitable[User]]

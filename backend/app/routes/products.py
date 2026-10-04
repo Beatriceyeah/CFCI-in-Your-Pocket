@@ -21,9 +21,9 @@ async def list_products(
     session: Session,
     params: Pagination,
     category: Annotated[list[Direction] | None, Query()] = None,
-    exclude_swiped: bool = True,  # in the contract; takes effect once swipes exist (Module 3)
+    exclude_swiped: bool = False,
 ) -> PaginatedEnvelope[ProductCardOut]:
-    products, total = await product_service.list_live(session, category, params)
+    products, total = await product_service.list_live(session, user, category, exclude_swiped, params)
     return paginated([ProductCardOut.from_model(p) for p in products], params, total)
 
 

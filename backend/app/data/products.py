@@ -6,7 +6,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
-from app.data.models import Product
+from app.data.models import Product, Swipe
 
 
 async def get(session: AsyncSession, product_id: uuid.UUID) -> Product | None:
@@ -31,12 +31,20 @@ async def get_by_owner(session: AsyncSession, owner_id: uuid.UUID) -> Product | 
 
 
 async def list_live(
-    session: AsyncSession, categories: list[str] | None, offset: int, limit: int
+    session: AsyncSession,
+    categories: list[str] | None,
+    offset: int,
+    limit: int,
+    exclude_swiped_by: uuid.UUID | None = None,
 ) -> tuple[list[Product], int]:
-    """Live products, newest first, optionally filtered by category. Returns (page, total)."""
+    """Live products, newest first, optionally filtered by category and without the products
+    a given user has swiped. Returns (page, total)."""
     where = [Product.status == "live"]
     if categories:
         where.append(Product.category.in_(categories))
+    if exclude_swiped_by is not None:
+        swiped = select(Swipe.product_id).where(Swipe.user_id == exclude_swiped_by)
+        where.append(Product.id.not_in(swiped))
 
     total = await session.scalar(select(func.count()).select_from(Product).where(*where))
     page = await session.scalars(
