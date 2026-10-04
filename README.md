@@ -5,6 +5,7 @@ Mobile-first app where Duke student teams list live products and external users 
 ## Start here
 - **AGENTS.md**: project rules, stack, data models and module order. Every AI coding tool reads it first.
 - **docs/contract.md**: the API contract. Endpoint changes go here first.
+- **docs/prd.md**: the MVP PRD (copy of the Google Doc). Background in docs/product-brief.md.
 
 ## Local dev
 Copy `.env.example` to `.env`, then `docker compose up` (Postgres + backend). Frontend: `cd frontend && npm install && npm run dev`.

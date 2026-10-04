@@ -3,7 +3,7 @@
 Rules for every AI coding tool on this project. Read this file and docs/contract.md before every task.
 
 ## Project
-CFCI in Your Pocket: a mobile-first portfolio app where Duke student teams list live products and external users (alumni, investors) browse them one at a time, swipe, and leave quick feedback. This MVP is an interactive demo on sample data so CFCI can confirm style and core flow. Product spec: the MVP PRD (Login, Onboarding, Product Browse, My Dashboard).
+CFCI in Your Pocket: a mobile-first portfolio app where Duke student teams list live products and external users (alumni, investors) browse them one at a time, swipe, and leave quick feedback. This MVP is an interactive demo on sample data so CFCI can confirm style and core flow. Product spec: docs/prd.md (Login, Onboarding, Product Browse, My Dashboard); background in docs/product-brief.md.
 
 ## Stack (locked)
 Do not add, swap or upgrade dependencies without asking.
