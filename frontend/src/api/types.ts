@@ -124,6 +124,23 @@ export interface Feedback {
   created_at: string;
 }
 
+export interface FeedbackCounts {
+  right_swipes: number;
+  would_use: number;
+  would_invest: number;
+  would_intro: number;
+}
+
+export interface FeedbackComment {
+  comment: string;
+  created_at: string;
+}
+
+export interface FeedbackSummary {
+  counts: FeedbackCounts;
+  comments: FeedbackComment[];
+}
+
 export interface HealthStatus {
   status: string;
 }

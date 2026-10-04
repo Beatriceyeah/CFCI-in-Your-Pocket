@@ -10,7 +10,7 @@ from app.core.security import AuthUser
 from app.data import feedback as feedback_repo
 from app.data import swipes as swipe_repo
 from app.data.models import Feedback
-from app.schemas.feedback import FeedbackIn
+from app.schemas.feedback import FeedbackComment, FeedbackCounts, FeedbackIn, FeedbackSummaryOut
 from app.services import products as product_service
 from app.services import users as user_service
 
@@ -36,3 +36,16 @@ async def give(session: AsyncSession, user: AuthUser, product_id: uuid.UUID, pay
         # Lost a race with a second submit from the same user.
         await session.rollback()
         raise ApiError("CONFLICT", ALREADY_GIVEN) from exc
+
+
+async def summary(session: AsyncSession, user: AuthUser, product_id: uuid.UUID) -> FeedbackSummaryOut:
+    """Feedback received. Anyone signed in can see it on a live product; the owner also sees it
+    while the product is pending or archived."""
+    await product_service.get_visible(session, user, product_id)
+
+    counts = await feedback_repo.reaction_counts(session, product_id)
+    comments = await feedback_repo.list_comments(session, product_id)
+    return FeedbackSummaryOut(
+        counts=FeedbackCounts(right_swipes=await swipe_repo.count_right(session, product_id), **counts),
+        comments=[FeedbackComment(comment=f.comment or "", created_at=f.created_at) for f in comments],
+    )
