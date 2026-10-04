@@ -1,17 +1,11 @@
-"""Example tests for Module 1 (Products), written from docs/contract.md.
+"""Tests for Module 1 (Products), written from docs/contract.md.
 
-Skipped until the Products module branch starts: remove the skip marker as the first
-commit on `module/products`, then build until these pass. Do not edit the assertions
-to fit the code; if the contract changes, change the contract first.
+Do not edit the assertions to fit the code; if the contract changes, change the contract first.
 """
 
 import uuid
 
-import pytest
-
 from tests.conftest import assert_error, auth_headers
-
-pytestmark = pytest.mark.skip(reason="Module 1 (Products) not started; enable on module/products")
 
 VALID_PRODUCT = {
     "name": "Loom",
