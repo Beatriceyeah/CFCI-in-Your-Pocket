@@ -136,3 +136,25 @@ async def test_hiding_swiped_products_is_per_user(client, viewer, product, make_
     )
 
     assert [c["id"] for c in response.json()["data"]] == [str(product.id)]
+
+
+async def test_owner_cannot_swipe_own_product(client, db_session, make_user: MakeUser):
+    owner = await make_user("student")
+    own = await make_product(db_session, owner.id)
+
+    response = await client.put(
+        swipe_url(own.id), json={"direction": "right"}, headers=auth_headers("student", owner.id)
+    )
+
+    assert_error(response, 403, "FORBIDDEN")
+
+
+async def test_owner_cannot_swipe_own_pending_product(client, db_session, make_user: MakeUser):
+    owner = await make_user("student")
+    own = await make_product(db_session, owner.id, status="pending_review")
+
+    response = await client.put(
+        swipe_url(own.id), json={"direction": "right"}, headers=auth_headers("student", owner.id)
+    )
+
+    assert_error(response, 403, "FORBIDDEN")

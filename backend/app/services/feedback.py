@@ -1,4 +1,4 @@
-"""Feedback rules: only after a right swipe, once per user and product."""
+"""Feedback rules: not on your own product, only after a right swipe, once per user and product."""
 
 import uuid
 
@@ -19,7 +19,9 @@ ALREADY_GIVEN = "You already left feedback on this product"
 
 async def give(session: AsyncSession, user: AuthUser, product_id: uuid.UUID, payload: FeedbackIn) -> Feedback:
     await user_service.get_me(session, user)
-    await product_service.get_visible(session, user, product_id)
+    product = await product_service.get_visible(session, user, product_id)
+    if product.owner_id == user.id:
+        raise ApiError("FORBIDDEN", "You can't leave feedback on your own product")
 
     swipe = await swipe_repo.get(session, user.id, product_id)
     if swipe is None or swipe.direction != "right":

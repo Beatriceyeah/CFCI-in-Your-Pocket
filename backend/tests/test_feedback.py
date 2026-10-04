@@ -129,3 +129,14 @@ async def test_feedback_requires_auth(client, product):
     response = await client.post(feedback_url(product.id), json=REACTIONS)
 
     assert_error(response, 401, "UNAUTHENTICATED")
+
+
+async def test_owner_cannot_give_feedback_on_own_product(client, db_session, make_user: MakeUser):
+    owner = await make_user("student")
+    own = await make_product(db_session, owner.id)
+
+    response = await client.post(
+        feedback_url(own.id), json=REACTIONS, headers=auth_headers("student", owner.id)
+    )
+
+    assert_error(response, 403, "FORBIDDEN")
