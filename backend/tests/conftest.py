@@ -7,7 +7,7 @@ database (Docker Compose locally, the Postgres service in CI), migrated with
 
 import os
 import uuid
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Awaitable, Callable
 
 os.environ.setdefault("DATABASE_URL", "postgresql+asyncpg://test:test@localhost:5432/app_test")
 os.environ.setdefault("JWT_SECRET", "test-only-not-a-real-secret")
@@ -20,6 +20,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine  # noqa: E4
 from app.core.config import get_settings  # noqa: E402
 from app.core.security import create_access_token  # noqa: E402
 from app.data.db import get_session  # noqa: E402
+from app.data.models import User  # noqa: E402
 from app.main import create_app  # noqa: E402
 
 
@@ -28,7 +29,10 @@ async def db_session() -> AsyncIterator[AsyncSession]:
     engine = create_async_engine(get_settings().database_url)
     async with engine.connect() as connection:
         transaction = await connection.begin()
-        session = AsyncSession(bind=connection, join_transaction_mode="create_savepoint")
+        # expire_on_commit=False matches the app's sessionmaker in app/data/db.py.
+        session = AsyncSession(
+            bind=connection, join_transaction_mode="create_savepoint", expire_on_commit=False
+        )
         try:
             yield session
         finally:
@@ -54,6 +58,23 @@ async def client(app: FastAPI) -> AsyncIterator[AsyncClient]:
     transport = ASGITransport(app=app, raise_app_exceptions=False)
     async with AsyncClient(transport=transport, base_url="http://test") as c:
         yield c
+
+
+MakeUser = Callable[..., Awaitable[User]]
+
+
+@pytest.fixture
+def make_user(db_session: AsyncSession) -> MakeUser:
+    """Insert a user into the test database. Use it when an endpoint needs the user to exist."""
+
+    async def _make(role: str = "student", name: str = "Ada Student") -> User:
+        provider = "duke_netid" if role == "student" else "google"
+        user = User(name=name, email=f"{uuid.uuid4().hex}@example.com", auth_provider=provider, role=role)
+        db_session.add(user)
+        await db_session.commit()
+        return user
+
+    return _make
 
 
 def auth_headers(role: str = "external", user_id: uuid.UUID | None = None) -> dict[str, str]:

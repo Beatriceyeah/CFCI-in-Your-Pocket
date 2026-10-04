@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import get_settings
 from app.core.errors import register_error_handlers
 from app.core.logging import configure_logging
-from app.routes import health
+from app.routes import health, products
 
 API_PREFIX = "/api/v1"
 
@@ -24,6 +24,7 @@ def create_app() -> FastAPI:
 
     api = APIRouter(prefix=API_PREFIX)
     api.include_router(health.router)
+    api.include_router(products.router)
     app.include_router(api)
     return app
 
