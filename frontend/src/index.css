@@ -1,0 +1,21 @@
+@import "tailwindcss";
+
+/* Duke-inspired palette from the PRD (section 5). Use these tokens, never raw hex, in components. */
+@theme {
+  --color-navy: #001a57;
+  --color-royal: #00539b;
+  --color-surface: #ffffff;
+  --color-canvas: #f7f8fa;
+  --color-ink: #111827;
+  --color-muted: #58595b;
+  --color-interest: #a1b70d;
+  --color-accent-yellow: #f6c867;
+  --color-accent-purple: #693e71;
+
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --radius-card: 1.25rem;
+}
+
+body {
+  @apply bg-canvas text-ink font-sans antialiased;
+}

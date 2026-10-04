@@ -1,0 +1,31 @@
+from fastapi import APIRouter, FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
+from app.core.config import get_settings
+from app.core.errors import register_error_handlers
+from app.core.logging import configure_logging
+from app.routes import health
+
+API_PREFIX = "/api/v1"
+
+
+def create_app() -> FastAPI:
+    settings = get_settings()
+    configure_logging(settings.log_level)
+
+    app = FastAPI(title="CFCI in Your Pocket API", redirect_slashes=False)
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=settings.cors_origins,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+    register_error_handlers(app)
+
+    api = APIRouter(prefix=API_PREFIX)
+    api.include_router(health.router)
+    app.include_router(api)
+    return app
+
+
+app = create_app()
