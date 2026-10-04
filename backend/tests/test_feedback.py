@@ -190,10 +190,28 @@ async def test_feedback_summary_empty(client, db_session, make_user: MakeUser):
     }
 
 
-async def test_feedback_summary_is_owner_only(client, product, headers):
+async def test_feedback_summary_visible_to_other_viewers(client, product, headers, make_user: MakeUser):
+    commenter = await make_user("external")
+    commenter_headers = auth_headers("external", commenter.id)
+    await swipe(client, product.id, "right", commenter_headers)
+    await client.post(feedback_url(product.id), json=REACTIONS, headers=commenter_headers)
+
     response = await client.get(summary_url(product.id), headers=headers)
 
-    assert_error(response, 403, "FORBIDDEN")
+    assert response.status_code == 200
+    data = response.json()["data"]
+    assert data["counts"]["right_swipes"] == 1
+    assert [c["comment"] for c in data["comments"]] == ["Love the demo"]
+
+
+async def test_feedback_summary_of_pending_product_is_owner_only(
+    client, db_session, headers, make_user: MakeUser
+):
+    pending = await make_product(db_session, (await make_user("student")).id, status="pending_review")
+
+    response = await client.get(summary_url(pending.id), headers=headers)
+
+    assert_error(response, 404, "NOT_FOUND")
 
 
 async def test_feedback_summary_unknown_product_is_404(client, headers):

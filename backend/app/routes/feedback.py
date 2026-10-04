@@ -27,4 +27,4 @@ async def give_feedback(
 async def get_feedback_summary(
     product_id: uuid.UUID, user: CurrentUser, session: Session
 ) -> Envelope[FeedbackSummaryOut]:
-    return ok(await feedback_service.summary_for_owner(session, user, product_id))
+    return ok(await feedback_service.summary(session, user, product_id))
