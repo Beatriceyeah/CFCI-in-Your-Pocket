@@ -17,9 +17,19 @@ URL_FIELDS = ("cover_image_url", "demo_video_url")
 
 
 async def list_live(
-    session: AsyncSession, categories: list[str] | None, params: PageParams
+    session: AsyncSession,
+    user: AuthUser,
+    categories: list[str] | None,
+    exclude_swiped: bool,
+    params: PageParams,
 ) -> tuple[list[Product], int]:
-    return await product_repo.list_live(session, categories, params.offset, params.page_size)
+    return await product_repo.list_live(
+        session,
+        categories,
+        params.offset,
+        params.page_size,
+        exclude_swiped_by=user.id if exclude_swiped else None,
+    )
 
 
 async def get_visible(session: AsyncSession, user: AuthUser, product_id: uuid.UUID) -> Product:

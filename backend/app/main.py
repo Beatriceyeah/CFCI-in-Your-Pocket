@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import get_settings
 from app.core.errors import register_error_handlers
 from app.core.logging import configure_logging
-from app.routes import auth, health, me, products
+from app.routes import auth, feedback, health, me, products, swipes
 
 API_PREFIX = "/api/v1"
 
@@ -27,6 +27,8 @@ def create_app() -> FastAPI:
     api.include_router(auth.router)
     api.include_router(me.router)
     api.include_router(products.router)
+    api.include_router(swipes.router)
+    api.include_router(feedback.router)
     app.include_router(api)
     return app
 

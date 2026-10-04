@@ -106,7 +106,7 @@ Out-of-range `page_size` → `VALIDATION_ERROR`. A page past the end returns an 
 
 #### `GET /api/v1/products`
 - Auth: required
-- Query: `page`, `page_size`, `category` (repeatable, optional), `exclude_swiped` (bool, default `true`)
+- Query: `page`, `page_size`, `category` (repeatable, optional), `exclude_swiped` (bool, default `false`: swiped products stay in the gallery; `true` hides products the user already swiped)
 - Response `200`: `{ "data": [ProductCard], "error": null, "meta": { ... } }`
 - Behavior: `live` products only, newest first.
 - Errors: VALIDATION_ERROR, UNAUTHENTICATED
@@ -143,14 +143,15 @@ Out-of-range `page_size` → `VALIDATION_ERROR`. A page past the end returns an 
 - Auth: required
 - Request: `{ "direction": "right" }` (`left` | `right`)
 - Response `200`: `{ "data": { "product_id": "uuid", "direction": "right", "created_at": "..." }, "error": null }`
-- Behavior: idempotent; a later swipe on the same product replaces the earlier one. Right = added to Interested Products.
-- Errors: VALIDATION_ERROR, UNAUTHENTICATED, NOT_FOUND
+- Behavior: idempotent; a later swipe on the same product replaces the earlier one, and `created_at` becomes the time of the latest swipe. Right = added to Interested Products. Only live products the user can see can be swiped; others → NOT_FOUND. Owners can't swipe their own product → FORBIDDEN.
+- Errors: VALIDATION_ERROR, UNAUTHENTICATED, FORBIDDEN, NOT_FOUND
 
 #### `POST /api/v1/products/{product_id}/feedback`
 - Auth: required
 - Request: `{ "would_use": true, "would_invest": false, "would_intro": true, "comment": "optional, max 1000 chars" }`
 - Response `201`: `{ "data": { "product_id": "uuid", "would_use": true, "would_invest": false, "would_intro": true, "comment": "...", "created_at": "..." }, "error": null }`
-- Errors: VALIDATION_ERROR, UNAUTHENTICATED, NOT_FOUND, CONFLICT (no right swipe yet, or feedback already given)
+- Errors: VALIDATION_ERROR, UNAUTHENTICATED, FORBIDDEN (own product), NOT_FOUND, CONFLICT (no right swipe yet, or feedback already given)
+- Notes: `would_use`, `would_invest`, `would_intro` are required; `comment` is optional and blank → `null`. Feedback is final: it stays if the user later swipes left, and a second submit → CONFLICT.
 
 ### Dashboard (Module 4)
 
@@ -179,3 +180,6 @@ Out-of-range `page_size` → `VALIDATION_ERROR`. A page past the end returns an 
 | --- | --- | --- |
 | 2026-10-04 | Initial contract. Auth mocked via `demo-login` instead of passwords (stack deviation, MVP only) | Caroline (auth approach); contract pending review |
 | 2026-10-04 | `demo-login`: demo users are created on first sign-in instead of seeded; `PATCH /me` collapses duplicate directions and rejects null | Pending review (PR for Module 2) |
+| 2026-10-04 | `GET /products`: `exclude_swiped` defaults to `false`, so swiped products stay in the gallery | Beatrice (product decision) |
+| 2026-10-04 | Swipe: `created_at` = latest swipe time. Feedback: reaction booleans required, blank comment → `null`, feedback stays after a later left swipe | Pending review (PR for Module 3) |
+| 2026-10-04 | Swipe and feedback on your own product → FORBIDDEN | Beatrice (product decision) |

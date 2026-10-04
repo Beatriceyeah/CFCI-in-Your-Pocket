@@ -6,7 +6,17 @@ Models are added module by module (see AGENTS.md, "Data models").
 import uuid
 from datetime import datetime
 
-from sqlalchemy import ARRAY, CheckConstraint, DateTime, ForeignKey, String, Text, false, func
+from sqlalchemy import (
+    ARRAY,
+    CheckConstraint,
+    DateTime,
+    ForeignKey,
+    String,
+    Text,
+    UniqueConstraint,
+    false,
+    func,
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.data.db import Base
@@ -15,6 +25,7 @@ DIRECTIONS = ("research", "health", "software", "hardware")
 AUTH_PROVIDERS = ("duke_netid", "linkedin", "google")
 ROLES = ("student", "external")
 PRODUCT_STATUSES = ("pending_review", "live", "archived")
+SWIPE_DIRECTIONS = ("left", "right")
 
 
 def _in(column: str, values: tuple[str, ...]) -> str:
@@ -72,4 +83,38 @@ class Product(Base):
     owner: Mapped[User] = relationship(lazy="raise")
 
 
-__all__ = ["Base", "Product", "User"]
+class Swipe(Base):
+    """A user's latest swipe on a product; a new swipe replaces the old one. Right = interested."""
+
+    __tablename__ = "swipes"
+    __table_args__ = (
+        UniqueConstraint("user_id", "product_id", name="uq_swipes_user_product"),
+        CheckConstraint(_in("direction", SWIPE_DIRECTIONS), name="ck_swipes_direction"),
+    )
+    __mapper_args__ = {"eager_defaults": True}
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
+    product_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("products.id", ondelete="CASCADE"), index=True)
+    direction: Mapped[str] = mapped_column(String(10))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class Feedback(Base):
+    """Quick reactions after a right swipe. One per (user, product)."""
+
+    __tablename__ = "feedback"
+    __table_args__ = (UniqueConstraint("user_id", "product_id", name="uq_feedback_user_product"),)
+    __mapper_args__ = {"eager_defaults": True}
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
+    product_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("products.id", ondelete="CASCADE"), index=True)
+    would_use: Mapped[bool]
+    would_invest: Mapped[bool]
+    would_intro: Mapped[bool]
+    comment: Mapped[str | None] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+__all__ = ["Base", "Feedback", "Product", "Swipe", "User"]

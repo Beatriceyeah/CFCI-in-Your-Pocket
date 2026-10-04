@@ -6,17 +6,7 @@ Do not edit the assertions to fit the code; if the contract changes, change the 
 import uuid
 from datetime import UTC, datetime
 
-from app.data.models import Product
-from tests.conftest import MakeUser, assert_error, auth_headers
-
-VALID_PRODUCT = {
-    "name": "Loom",
-    "one_liner": "Clinical trial matching in minutes",
-    "cover_image_url": "https://example.com/loom.png",
-    "demo_video_url": "https://example.com/loom.mp4",
-    "brief": "Loom helps research teams find eligible patients faster.",
-    "category": "health",
-}
+from tests.conftest import VALID_PRODUCT, MakeUser, assert_error, auth_headers, make_product
 
 
 async def test_student_creates_product_pending_review(client, make_user: MakeUser):
@@ -74,15 +64,6 @@ async def test_list_products_invalid_page_size_is_400(client):
     response = await client.get("/api/v1/products", params={"page_size": 500}, headers=auth_headers())
 
     assert_error(response, 400, "VALIDATION_ERROR")
-
-
-async def make_product(db_session, owner_id: uuid.UUID, **overrides) -> Product:
-    """Insert a product directly, e.g. to set a status the API doesn't expose yet."""
-    fields = {**VALID_PRODUCT, "status": "live", **overrides}
-    product = Product(owner_id=owner_id, **fields)
-    db_session.add(product)
-    await db_session.commit()
-    return product
 
 
 async def test_created_product_has_full_contract_fields(client, make_user: MakeUser):

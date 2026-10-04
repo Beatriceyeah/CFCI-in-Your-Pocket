@@ -96,6 +96,34 @@ export interface MeUpdate {
   onboarded?: boolean;
 }
 
+export type SwipeDirection = "left" | "right";
+
+export interface SwipeRequest {
+  direction: SwipeDirection;
+}
+
+export interface Swipe {
+  product_id: string;
+  direction: SwipeDirection;
+  created_at: string;
+}
+
+export interface FeedbackRequest {
+  would_use: boolean;
+  would_invest: boolean;
+  would_intro: boolean;
+  comment?: string | null;
+}
+
+export interface Feedback {
+  product_id: string;
+  would_use: boolean;
+  would_invest: boolean;
+  would_intro: boolean;
+  comment: string | null;
+  created_at: string;
+}
+
 export interface HealthStatus {
   status: string;
 }
