@@ -159,6 +159,7 @@ Out-of-range `page_size` → `VALIDATION_ERROR`. A page past the end returns an 
 - Auth: required
 - Query: `page`, `page_size`
 - Response `200`: `{ "data": [ProductCard], "error": null, "meta": { ... } }`, most recent right swipe first
+- Behavior: current right swipes only (swiping left later removes the product). Only `live` products; a product that is later archived drops off the list.
 - Errors: VALIDATION_ERROR, UNAUTHENTICATED
 
 #### `GET /api/v1/products/{product_id}/feedback`
@@ -168,7 +169,7 @@ Out-of-range `page_size` → `VALIDATION_ERROR`. A page past the end returns an 
 { "data": { "counts": { "right_swipes": 12, "would_use": 8, "would_invest": 3, "would_intro": 5 }, "comments": [ { "comment": "...", "created_at": "..." } ] }, "error": null }
 ```
 - Errors: UNAUTHENTICATED, FORBIDDEN, NOT_FOUND
-- Note: commenter identity is not returned (open question in the PRD).
+- Note: commenter identity is not returned (open question in the PRD). `right_swipes` counts current right swipes; reaction counts and comments come from submitted feedback. Comments: only non-empty ones, newest first, not paginated. Non-owner → FORBIDDEN; unknown product → NOT_FOUND.
 
 ## Open items (TBD, need a decision before the module that uses them)
 - How a product moves from `pending_review` to `live` in the demo. PRD says approval is simulated; proposal: seeded sample products are `live`, new uploads stay `pending_review`.
@@ -183,3 +184,4 @@ Out-of-range `page_size` → `VALIDATION_ERROR`. A page past the end returns an 
 | 2026-10-04 | `GET /products`: `exclude_swiped` defaults to `false`, so swiped products stay in the gallery | Beatrice (product decision) |
 | 2026-10-04 | Swipe: `created_at` = latest swipe time. Feedback: reaction booleans required, blank comment → `null`, feedback stays after a later left swipe | Pending review (PR for Module 3) |
 | 2026-10-04 | Swipe and feedback on your own product → FORBIDDEN | Beatrice (product decision) |
+| 2026-10-04 | Interested Products: live products only. Feedback summary: what each count means, comment order | Pending review (PR for Module 4) |

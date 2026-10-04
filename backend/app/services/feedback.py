@@ -8,9 +8,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.errors import ApiError
 from app.core.security import AuthUser
 from app.data import feedback as feedback_repo
+from app.data import products as product_repo
 from app.data import swipes as swipe_repo
 from app.data.models import Feedback
-from app.schemas.feedback import FeedbackIn
+from app.schemas.feedback import FeedbackComment, FeedbackCounts, FeedbackIn, FeedbackSummaryOut
 from app.services import products as product_service
 from app.services import users as user_service
 
@@ -36,3 +37,21 @@ async def give(session: AsyncSession, user: AuthUser, product_id: uuid.UUID, pay
         # Lost a race with a second submit from the same user.
         await session.rollback()
         raise ApiError("CONFLICT", ALREADY_GIVEN) from exc
+
+
+async def summary_for_owner(
+    session: AsyncSession, user: AuthUser, product_id: uuid.UUID
+) -> FeedbackSummaryOut:
+    """Feedback received, shown on the owner's My Product."""
+    product = await product_repo.get(session, product_id)
+    if product is None:
+        raise ApiError("NOT_FOUND", "Product not found")
+    if product.owner_id != user.id:
+        raise ApiError("FORBIDDEN", "Only the product's owner can see its feedback")
+
+    counts = await feedback_repo.reaction_counts(session, product_id)
+    comments = await feedback_repo.list_comments(session, product_id)
+    return FeedbackSummaryOut(
+        counts=FeedbackCounts(right_swipes=await swipe_repo.count_right(session, product_id), **counts),
+        comments=[FeedbackComment(comment=f.comment or "", created_at=f.created_at) for f in comments],
+    )

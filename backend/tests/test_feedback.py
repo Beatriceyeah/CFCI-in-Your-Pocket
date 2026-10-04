@@ -140,3 +140,69 @@ async def test_owner_cannot_give_feedback_on_own_product(client, db_session, mak
     )
 
     assert_error(response, 403, "FORBIDDEN")
+
+
+# --- Feedback received (Module 4: My Dashboard) ---
+
+
+def summary_url(product_id) -> str:
+    return f"/api/v1/products/{product_id}/feedback"
+
+
+async def test_owner_sees_feedback_summary(client, db_session, make_user: MakeUser):
+    owner = await make_user("student")
+    own = await make_product(db_session, owner.id)
+    viewers = [await make_user("external") for _ in range(3)]
+    reactions = [
+        {"would_use": True, "would_invest": True, "would_intro": False, "comment": "Would pay for this"},
+        {"would_use": True, "would_invest": False, "would_intro": True},
+        {"would_use": False, "would_invest": False, "would_intro": False, "comment": "Not for me"},
+    ]
+    for viewer, reaction in zip(viewers, reactions, strict=True):
+        headers = auth_headers("external", viewer.id)
+        await swipe(client, own.id, "right", headers)
+        await client.post(feedback_url(own.id), json=reaction, headers=headers)
+    lurker = await make_user("external")
+    await swipe(client, own.id, "right", auth_headers("external", lurker.id))
+    await swipe(client, own.id, "left", auth_headers("external", (await make_user("external")).id))
+
+    response = await client.get(summary_url(own.id), headers=auth_headers("student", owner.id))
+
+    assert response.status_code == 200
+    data = response.json()["data"]
+    assert data["counts"] == {"right_swipes": 4, "would_use": 2, "would_invest": 1, "would_intro": 1}
+    assert sorted(c["comment"] for c in data["comments"]) == ["Not for me", "Would pay for this"]
+    assert all(set(c) == {"comment", "created_at"} for c in data["comments"])
+
+
+async def test_feedback_summary_empty(client, db_session, make_user: MakeUser):
+    owner = await make_user("student")
+    own = await make_product(db_session, owner.id, status="pending_review")
+
+    response = await client.get(summary_url(own.id), headers=auth_headers("student", owner.id))
+
+    assert response.json() == {
+        "data": {
+            "counts": {"right_swipes": 0, "would_use": 0, "would_invest": 0, "would_intro": 0},
+            "comments": [],
+        },
+        "error": None,
+    }
+
+
+async def test_feedback_summary_is_owner_only(client, product, headers):
+    response = await client.get(summary_url(product.id), headers=headers)
+
+    assert_error(response, 403, "FORBIDDEN")
+
+
+async def test_feedback_summary_unknown_product_is_404(client, headers):
+    response = await client.get(summary_url(uuid.uuid4()), headers=headers)
+
+    assert_error(response, 404, "NOT_FOUND")
+
+
+async def test_feedback_summary_requires_auth(client, product):
+    response = await client.get(summary_url(product.id))
+
+    assert_error(response, 401, "UNAUTHENTICATED")

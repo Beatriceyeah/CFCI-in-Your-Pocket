@@ -40,3 +40,22 @@ class FeedbackOut(BaseModel):
             comment=feedback.comment,
             created_at=feedback.created_at,
         )
+
+
+class FeedbackCounts(BaseModel):
+    right_swipes: int
+    would_use: int
+    would_invest: int
+    would_intro: int
+
+
+class FeedbackComment(BaseModel):
+    """Commenter identity is deliberately left out (open question in the PRD)."""
+
+    comment: str
+    created_at: datetime
+
+
+class FeedbackSummaryOut(BaseModel):
+    counts: FeedbackCounts
+    comments: list[FeedbackComment]

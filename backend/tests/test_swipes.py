@@ -1,9 +1,11 @@
 """Tests for Module 3 (Browse: swipes), written from docs/contract.md."""
 
 import uuid
+from datetime import UTC, datetime
 
 import pytest
 
+from app.data.models import Swipe
 from tests.conftest import MakeUser, assert_error, auth_headers, make_product
 
 
@@ -158,3 +160,91 @@ async def test_owner_cannot_swipe_own_pending_product(client, db_session, make_u
     )
 
     assert_error(response, 403, "FORBIDDEN")
+
+
+# --- Interested Products (Module 4: My Dashboard) ---
+
+
+async def add_swipe(db_session, user_id, product_id, direction: str, day: int) -> None:
+    """Insert a swipe with an explicit time; one transaction per test means now() never changes."""
+    created = datetime(2026, 10, day, tzinfo=UTC)
+    db_session.add(Swipe(user_id=user_id, product_id=product_id, direction=direction, created_at=created))
+    await db_session.commit()
+
+
+async def test_interested_products_newest_right_swipe_first(client, db_session, viewer, make_user: MakeUser):
+    older = await make_product(db_session, (await make_user()).id, name="Older")
+    newer = await make_product(db_session, (await make_user()).id, name="Newer")
+    skipped = await make_product(db_session, (await make_user()).id, name="Skipped")
+    await add_swipe(db_session, viewer.id, older.id, "right", day=1)
+    await add_swipe(db_session, viewer.id, newer.id, "right", day=2)
+    await add_swipe(db_session, viewer.id, skipped.id, "left", day=3)
+
+    response = await client.get("/api/v1/me/interested-products", headers=auth_headers("external", viewer.id))
+
+    body = response.json()
+    assert response.status_code == 200
+    assert [c["name"] for c in body["data"]] == ["Newer", "Older"]
+    assert set(body["data"][0]) == {"id", "name", "one_liner", "cover_image_url", "category"}
+    assert body["meta"] == {"page": 1, "page_size": 20, "total": 2}
+
+
+async def test_swiping_left_removes_from_interested(client, viewer, product):
+    headers = auth_headers("external", viewer.id)
+    await client.put(swipe_url(product.id), json={"direction": "right"}, headers=headers)
+    await client.put(swipe_url(product.id), json={"direction": "left"}, headers=headers)
+
+    response = await client.get("/api/v1/me/interested-products", headers=headers)
+
+    assert response.json()["data"] == []
+
+
+async def test_interested_products_hide_products_no_longer_live(client, db_session, viewer, product):
+    await add_swipe(db_session, viewer.id, product.id, "right", day=1)
+    product.status = "archived"
+    await db_session.commit()
+
+    response = await client.get("/api/v1/me/interested-products", headers=auth_headers("external", viewer.id))
+
+    assert response.json()["meta"]["total"] == 0
+
+
+async def test_interested_products_are_per_user(client, viewer, product, make_user: MakeUser):
+    other = await make_user("external")
+    await client.put(
+        swipe_url(product.id), json={"direction": "right"}, headers=auth_headers("external", other.id)
+    )
+
+    response = await client.get("/api/v1/me/interested-products", headers=auth_headers("external", viewer.id))
+
+    assert response.json()["data"] == []
+
+
+async def test_interested_products_paginate(client, db_session, viewer, make_user: MakeUser):
+    for day in (1, 2, 3):
+        p = await make_product(db_session, (await make_user()).id, name=f"Day {day}")
+        await add_swipe(db_session, viewer.id, p.id, "right", day=day)
+
+    response = await client.get(
+        "/api/v1/me/interested-products",
+        params={"page": 2, "page_size": 2},
+        headers=auth_headers("external", viewer.id),
+    )
+
+    body = response.json()
+    assert [c["name"] for c in body["data"]] == ["Day 1"]
+    assert body["meta"] == {"page": 2, "page_size": 2, "total": 3}
+
+
+async def test_interested_products_invalid_page_size_is_400(client, viewer):
+    response = await client.get(
+        "/api/v1/me/interested-products", params={"page_size": 0}, headers=auth_headers("external", viewer.id)
+    )
+
+    assert_error(response, 400, "VALIDATION_ERROR")
+
+
+async def test_interested_products_requires_auth(client):
+    response = await client.get("/api/v1/me/interested-products")
+
+    assert_error(response, 401, "UNAUTHENTICATED")
