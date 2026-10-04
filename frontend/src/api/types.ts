@@ -70,6 +70,32 @@ export interface Product extends ProductCard {
   updated_at: string;
 }
 
+export interface ProductCreate {
+  name: string;
+  one_liner: string;
+  cover_image_url: string;
+  demo_video_url: string;
+  brief: string;
+  category: Direction;
+}
+
+export type ProductUpdate = Partial<ProductCreate>;
+
+export interface DemoLoginRequest {
+  provider: AuthProvider;
+}
+
+export interface AuthSession {
+  access_token: string;
+  token_type: "bearer";
+  user: User;
+}
+
+export interface MeUpdate {
+  interested_directions?: Direction[];
+  onboarded?: boolean;
+}
+
 export interface HealthStatus {
   status: string;
 }

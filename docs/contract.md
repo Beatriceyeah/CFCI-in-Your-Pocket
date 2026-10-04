@@ -85,7 +85,7 @@ Out-of-range `page_size` → `VALIDATION_ERROR`. A page past the end returns an 
 ```json
 { "data": { "access_token": "jwt", "token_type": "bearer", "user": { "...": "User" } }, "error": null }
 ```
-- Behavior: signs in as the seeded demo user for that provider. `duke_netid` → student path; `linkedin` / `google` → external path.
+- Behavior: signs in as the demo user for that provider, created on its first sign-in (no separate seeding). One demo user per provider, shared by everyone who clicks that button. `duke_netid` → student path; `linkedin` / `google` → external path.
 - Errors: VALIDATION_ERROR
 
 ### Me
@@ -100,7 +100,7 @@ Out-of-range `page_size` → `VALIDATION_ERROR`. A page past the end returns an 
 - Request (all optional): `{ "interested_directions": ["software"], "onboarded": true }`
 - Response `200`: `{ "data": User, "error": null }`
 - Errors: VALIDATION_ERROR, UNAUTHENTICATED
-- Note: directions only set the default gallery filter. Skipping onboarding = `{ "onboarded": true }` alone.
+- Note: directions only set the default gallery filter. Skipping onboarding = `{ "onboarded": true }` alone. Duplicate directions are collapsed; `null` for either field → VALIDATION_ERROR.
 
 ### Products (Module 1)
 
@@ -178,3 +178,4 @@ Out-of-range `page_size` → `VALIDATION_ERROR`. A page past the end returns an 
 | Date | Change | Approved by |
 | --- | --- | --- |
 | 2026-10-04 | Initial contract. Auth mocked via `demo-login` instead of passwords (stack deviation, MVP only) | Caroline (auth approach); contract pending review |
+| 2026-10-04 | `demo-login`: demo users are created on first sign-in instead of seeded; `PATCH /me` collapses duplicate directions and rejects null | Pending review (PR for Module 2) |
