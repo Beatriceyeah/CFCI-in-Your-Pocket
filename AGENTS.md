@@ -64,7 +64,7 @@ docker-compose.yml
 .github/workflows/ci.yml
 ```
 
-Put new files where this structure says. Don't create new top-level folders without asking. `engineering-baseline/` and `.claude/skills/` hold the skill itself, not app code.
+Put new files where this structure says. Don't create new top-level folders without asking. `.claude/skills/` holds the team's Claude skills (engineering-baseline, prd-writer), not app code.
 
 ## Backend rules
 - **Layers:** routes → services → data. No business logic in route handlers, no DB calls outside `data/`.
