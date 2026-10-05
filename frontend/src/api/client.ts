@@ -1,11 +1,25 @@
 // The single API client. Every HTTP call in the app goes through here (AGENTS.md).
 import type {
+  AuthProvider,
+  AuthSession,
+  Direction,
   Envelope,
   ErrorBody,
   ErrorCode,
+  Feedback,
+  FeedbackRequest,
+  FeedbackSummary,
   HealthStatus,
+  MeUpdate,
   Page,
   PaginatedEnvelope,
+  Product,
+  ProductCard,
+  ProductCreate,
+  ProductUpdate,
+  Swipe,
+  SwipeDirection,
+  User,
 } from "./types";
 
 const BASE_URL = `${import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000"}/api/v1`;
@@ -87,7 +101,40 @@ export async function requestPage<T>(path: string, query?: Query): Promise<Page<
   return { items: envelope.data, meta: envelope.meta };
 }
 
+export interface ProductListQuery {
+  page?: number;
+  page_size?: number;
+  category?: Direction[];
+  exclude_swiped?: boolean;
+}
+
 // Endpoint functions. Add one per contract endpoint, grouped by module.
 export const api = {
   health: () => request<HealthStatus>("GET", "/health"),
+
+  // Auth + Me (Module 2)
+  demoLogin: (provider: AuthProvider) =>
+    request<AuthSession>("POST", "/auth/demo-login", { provider }),
+  me: () => request<User>("GET", "/me"),
+  updateMe: (changes: MeUpdate) => request<User>("PATCH", "/me", changes),
+
+  // Products (Module 1)
+  listProducts: (query: ProductListQuery = {}) =>
+    requestPage<ProductCard>("/products", { ...query }),
+  getProduct: (id: string) => request<Product>("GET", `/products/${id}`),
+  createProduct: (product: ProductCreate) => request<Product>("POST", "/products", product),
+  updateProduct: (id: string, changes: ProductUpdate) =>
+    request<Product>("PATCH", `/products/${id}`, changes),
+  myProduct: () => request<Product | null>("GET", "/me/product"),
+
+  // Browse (Module 3)
+  swipe: (id: string, direction: SwipeDirection) =>
+    request<Swipe>("PUT", `/products/${id}/swipe`, { direction }),
+  giveFeedback: (id: string, feedback: FeedbackRequest) =>
+    request<Feedback>("POST", `/products/${id}/feedback`, feedback),
+
+  // My Dashboard (Module 4)
+  interestedProducts: (page = 1, page_size = 50) =>
+    requestPage<ProductCard>("/me/interested-products", { page, page_size }),
+  feedbackSummary: (id: string) => request<FeedbackSummary>("GET", `/products/${id}/feedback`),
 };
