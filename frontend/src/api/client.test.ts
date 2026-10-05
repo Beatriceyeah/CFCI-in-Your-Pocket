@@ -75,4 +75,53 @@ describe("api client", () => {
 
     await expect(request("GET", "/x")).rejects.toMatchObject({ code: "INTERNAL_ERROR", status: 0 });
   });
+
+  it("demo-login posts the provider and returns the session", async () => {
+    const fetchMock = mockFetch(200, {
+      data: { access_token: "jwt", token_type: "bearer", user: { id: "u1" } },
+      error: null,
+    });
+
+    const session = await api.auth.demoLogin({ provider: "duke_netid" });
+
+    expect(session.access_token).toBe("jwt");
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url).toContain("/auth/demo-login");
+    expect(init.method).toBe("POST");
+    expect(JSON.parse(init.body as string)).toEqual({ provider: "duke_netid" });
+  });
+
+  it("swipe PUTs the direction to the product's swipe endpoint", async () => {
+    const fetchMock = mockFetch(200, {
+      data: { product_id: "p1", direction: "right", created_at: "now" },
+      error: null,
+    });
+
+    await api.swipes.swipe("p1", "right");
+
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url).toContain("/products/p1/swipe");
+    expect(init.method).toBe("PUT");
+    expect(JSON.parse(init.body as string)).toEqual({ direction: "right" });
+  });
+
+  it("lists products with category and exclude_swiped as query params", async () => {
+    const fetchMock = mockFetch(200, {
+      data: [],
+      error: null,
+      meta: { page: 1, page_size: 20, total: 0 },
+    });
+
+    await api.products.list({
+      page: 1,
+      page_size: 20,
+      category: ["health", "software"],
+      exclude_swiped: true,
+    });
+
+    const [url] = fetchMock.mock.calls[0] as [string, RequestInit];
+    const parsed = new URL(url);
+    expect(parsed.searchParams.getAll("category")).toEqual(["health", "software"]);
+    expect(parsed.searchParams.get("exclude_swiped")).toBe("true");
+  });
 });

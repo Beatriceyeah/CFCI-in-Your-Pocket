@@ -10,6 +10,11 @@ Mobile-first app where Duke student teams list live products and external users 
 ## Local dev
 Copy `.env.example` to `.env`, then `docker compose up` (Postgres + backend). Frontend: `cd frontend && npm install && npm run dev`.
 
+To populate Browse with sample live products for the demo (new student uploads otherwise start
+`pending_review`, and there's no approval workflow yet): `pip install -r backend/requirements.txt`
+then `DATABASE_URL=postgresql+asyncpg://app:app@localhost:5432/app python scripts/seed_sample_products.py`.
+Dev database only — never point this at `app_test`.
+
 ## Claude skills
 `.claude/skills/` holds the team's skills, loaded automatically by Claude Code in this repo:
 - **engineering-baseline**: sets up and enforces the baseline. The stack is defined in `.claude/skills/engineering-baseline/stack.md`.

@@ -1,11 +1,25 @@
 // The single API client. Every HTTP call in the app goes through here (AGENTS.md).
 import type {
+  AuthSession,
+  DemoLoginRequest,
+  Direction,
   Envelope,
   ErrorBody,
   ErrorCode,
+  Feedback,
+  FeedbackRequest,
+  FeedbackSummary,
   HealthStatus,
+  MeUpdate,
   Page,
   PaginatedEnvelope,
+  Product,
+  ProductCard,
+  ProductCreate,
+  ProductUpdate,
+  Swipe,
+  SwipeDirection,
+  User,
 } from "./types";
 
 const BASE_URL = `${import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000"}/api/v1`;
@@ -87,7 +101,52 @@ export async function requestPage<T>(path: string, query?: Query): Promise<Page<
   return { items: envelope.data, meta: envelope.meta };
 }
 
+interface ListProductsQuery extends Query {
+  page?: number;
+  page_size?: number;
+  category?: Direction[];
+  exclude_swiped?: boolean;
+}
+
+interface PageQuery extends Query {
+  page?: number;
+  page_size?: number;
+}
+
 // Endpoint functions. Add one per contract endpoint, grouped by module.
 export const api = {
   health: () => request<HealthStatus>("GET", "/health"),
+
+  auth: {
+    demoLogin: (payload: DemoLoginRequest) =>
+      request<AuthSession>("POST", "/auth/demo-login", payload),
+  },
+
+  me: {
+    get: () => request<User>("GET", "/me"),
+    update: (payload: MeUpdate) => request<User>("PATCH", "/me", payload),
+  },
+
+  products: {
+    list: (query?: ListProductsQuery) => requestPage<ProductCard>("/products", query),
+    get: (productId: string) => request<Product>("GET", `/products/${productId}`),
+    create: (payload: ProductCreate) => request<Product>("POST", "/products", payload),
+    update: (productId: string, payload: ProductUpdate) =>
+      request<Product>("PATCH", `/products/${productId}`, payload),
+    mine: () => request<Product | null>("GET", "/me/product"),
+  },
+
+  swipes: {
+    swipe: (productId: string, direction: SwipeDirection) =>
+      request<Swipe>("PUT", `/products/${productId}/swipe`, { direction }),
+    interestedProducts: (query?: PageQuery) =>
+      requestPage<ProductCard>("/me/interested-products", query),
+  },
+
+  feedback: {
+    give: (productId: string, payload: FeedbackRequest) =>
+      request<Feedback>("POST", `/products/${productId}/feedback`, payload),
+    summary: (productId: string) =>
+      request<FeedbackSummary>("GET", `/products/${productId}/feedback`),
+  },
 };
