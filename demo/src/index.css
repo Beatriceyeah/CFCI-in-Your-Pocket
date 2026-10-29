@@ -1,0 +1,110 @@
+@import "tailwindcss";
+
+/* Duke-inspired palette from the PRD (section 5). Components use these tokens, never raw hex. */
+@theme {
+  --color-navy: #001a57;
+  --color-royal: #00539b;
+  --color-surface: #ffffff;
+  --color-canvas: #f4f6fa;
+  --color-line: #e2e6ee;
+  --color-ink: #111827;
+  --color-muted: #58595b;
+  /* One green for every positive state: interest, introduced, featured, saved. */
+  --color-interest: #178a50;
+  --color-interest-deep: #0f6b3d;
+  --color-accent-yellow: #f6c867;
+  --color-accent-purple: #693e71;
+  --color-warn: #b45309;
+  --color-warn-soft: #fef3c7;
+  --color-danger: #b42318;
+  --color-danger-soft: #fee4e2;
+
+  --font-display: "Bricolage Grotesque", "DM Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "DM Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --radius-card: 1.25rem;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  @apply bg-canvas text-ink font-sans antialiased;
+}
+
+@keyframes sheet-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes backdrop-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes backdrop-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+.anim-sheet {
+  animation: sheet-up 0.45s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.anim-backdrop {
+  animation: backdrop-in 0.3s ease-out;
+}
+
+.anim-backdrop-out {
+  animation: backdrop-out 0.26s ease-in forwards;
+}
+
+.anim-fade {
+  animation: fade-up 0.25s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .anim-sheet,
+  .anim-backdrop,
+  .anim-backdrop-out,
+  .anim-fade {
+    animation: none;
+  }
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-royal);
+  outline-offset: 2px;
+}
+
+.overflow-x-auto {
+  scrollbar-width: none;
+}
+.overflow-x-auto::-webkit-scrollbar {
+  display: none;
+}
