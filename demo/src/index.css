@@ -108,3 +108,26 @@ body {
 .overflow-x-auto::-webkit-scrollbar {
   display: none;
 }
+
+@keyframes confetti-fall {
+  from {
+    transform: translateY(-1.5rem) rotate(0deg);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(105vh) rotate(540deg);
+    opacity: 0.9;
+  }
+}
+
+.confetti {
+  animation-name: confetti-fall;
+  animation-timing-function: ease-in;
+  animation-fill-mode: both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .confetti {
+    display: none;
+  }
+}

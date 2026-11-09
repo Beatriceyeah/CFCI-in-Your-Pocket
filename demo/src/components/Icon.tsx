@@ -10,7 +10,7 @@ const PATHS: Record<string, string> = {
   check: "m5 12 5 5 9-10",
   close: "M6 6l12 12M18 6 6 18",
   info: "M12 8h.01M11 12h1v5h1M12 21a9 9 0 1 1 0-18 9 9 0 0 1 0 18Z",
-  heart: "M12 20s-7-4.4-9-9a5 5 0 0 1 9-3 5 5 0 0 1 9 3c-2 4.6-9 9-9 9Z",
+  eye: "M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12ZM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z",
   share: "M4 12v7h16v-7M12 3v12M8 7l4-4 4 4",
   edit: "M4 20h4L19 9l-4-4L4 16v4ZM14 6l4 4",
   play: "M8 5v14l11-7z",

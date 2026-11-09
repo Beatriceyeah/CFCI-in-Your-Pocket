@@ -1,52 +1,75 @@
 import { useMemo, useState } from "react";
 import { SEED_UNIQUE_VIEWERS } from "../../data/seed";
-import { averageOf, computeStats, isStale, type ProductStats } from "../../lib/analytics";
+import { averageOf, computeStats, isDelisted, isListed, isStale, type ProductStats } from "../../lib/analytics";
 import { useStore } from "../../store/StoreContext";
 import { LensHeatmap } from "./LensHeatmap";
 
-type SortKey = "views" | "interest" | "score";
+type SortKey = "views" | "interest" | "score" | "comments" | "engagement";
 
 const COLUMNS: { key: SortKey; label: string }[] = [
   { key: "views", label: "Views" },
   { key: "interest", label: "Interest rate" },
   { key: "score", label: "Avg score" },
+  { key: "comments", label: "Comments" },
+  { key: "engagement", label: "Engagement" },
 ];
 
 const sortValue = (s: ProductStats, k: SortKey): number =>
-  k === "interest" ? s.interestRate : k === "score" ? (s.overall ?? 0) : s.views;
+  k === "interest"
+    ? s.interestRate
+    : k === "score"
+      ? (s.overall ?? 0)
+      : k === "comments"
+        ? s.comments
+        : k === "engagement"
+          ? s.engagement
+          : s.views;
+
+const pct = (n: number): string => `${Math.round(n * 100)}%`;
 
 export function AdminOverview({ onGoPortfolio }: { onGoPortfolio: () => void }) {
   const { state } = useStore();
-  const [sort, setSort] = useState<SortKey>("views");
+  const [sort, setSort] = useState<SortKey>("engagement");
 
   const rows = useMemo(() => {
-    const live = state.products.filter((p) => p.status === "live");
+    const live = state.products.filter(isListed);
     return live
-      .map((p) => ({ p, s: computeStats(p, state.swipes, state.evaluations, state.opens) }))
+      .map((p) => ({ p, s: computeStats(p, state.swipes, state.evaluations, state.opens, state.connections) }))
       .sort((a, b) => sortValue(b.s, sort) - sortValue(a.s, sort));
-  }, [state.products, state.swipes, state.evaluations, state.opens, sort]);
+  }, [state.products, state.swipes, state.evaluations, state.opens, state.connections, sort]);
 
   const totalViews = rows.reduce((n, r) => n + r.s.views, 0);
   const totalShown = rows.reduce((n, r) => n + r.s.shown, 0);
   const totalInterested = rows.reduce((n, r) => n + r.s.interested, 0);
   const totalEvals = rows.reduce((n, r) => n + r.s.evaluations.length, 0);
+  const totalComments = rows.reduce((n, r) => n + r.s.comments, 0);
+  const totalPartial = rows.reduce((n, r) => n + r.s.partial, 0);
+  const totalEngagement = rows.reduce((n, r) => n + r.s.engagement, 0);
   const avgScore = averageOf(rows.map((r) => r.s.overall).filter((v): v is number => v !== null));
   const users = SEED_UNIQUE_VIEWERS + (Object.keys(state.swipes).length ? 1 : 0);
   const drafts = state.products.filter((p) => p.status === "draft").length;
-  const stale = state.products.filter((p) => p.status === "live" && isStale(p)).length;
+  const stale = state.products.filter(isStale).length;
+  const delisted = state.products.filter(isDelisted).length;
   const intros = state.connections.filter((c) => c.status === "pending").length;
   const attention = [
     drafts && `${drafts} draft${drafts > 1 ? "s" : ""}`,
     stale && `${stale} not updated in 30+ days`,
+    delisted && `${delisted} delisted after 60 days`,
     intros && `${intros} introduction${intros > 1 ? "s" : ""} waiting`,
   ].filter(Boolean);
 
   const totals = [
     { label: "External users", value: users.toString() },
     { label: "Views", value: totalViews.toString() },
-    { label: "Interest rate", value: `${Math.round((totalInterested / totalShown) * 100)}%` },
-    { label: "Evaluations", value: totalEvals.toString() },
+    { label: "Interest rate", value: totalShown ? pct(totalInterested / totalShown) : "–" },
     { label: "Avg score", value: avgScore ? avgScore.toFixed(1) : "–" },
+  ];
+
+  const feedbackRate = totalViews ? Math.min(1, totalEvals / totalViews) : 0;
+  const success = [
+    { label: "Feedback rate", value: pct(feedbackRate), note: "Viewers who gave a rating or comment" },
+    { label: "Written comments", value: totalComments.toString(), note: `${totalEvals} evaluations, ${totalPartial} partly done` },
+    { label: "Engagement score", value: totalEngagement.toLocaleString(), note: "All activity, deeper steps count double" },
   ];
 
   return (
@@ -63,7 +86,20 @@ export function AdminOverview({ onGoPortfolio }: { onGoPortfolio: () => void }) 
         </p>
       )}
 
-      <dl className="grid grid-cols-2 gap-x-6 gap-y-4 rounded-2xl bg-surface p-5 ring-1 ring-line sm:grid-cols-5">
+      <section aria-label="Are people giving feedback" className="flex flex-col gap-2">
+        <h2 className="font-display text-xl font-semibold text-navy">Are people giving feedback?</h2>
+        <dl className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          {success.map((t) => (
+            <div key={t.label} className="rounded-2xl bg-interest/10 p-4 ring-1 ring-interest/30">
+              <dd className="font-display text-3xl font-bold tabular-nums text-interest-deep">{t.value}</dd>
+              <dt className="text-sm font-semibold text-navy">{t.label}</dt>
+              <p className="text-xs text-muted">{t.note}</p>
+            </div>
+          ))}
+        </dl>
+      </section>
+
+      <dl className="grid grid-cols-2 gap-x-6 gap-y-4 rounded-2xl bg-surface p-5 ring-1 ring-line sm:grid-cols-4">
         {totals.map((t) => (
           <div key={t.label}>
             <dd className="font-display text-3xl font-bold tabular-nums text-navy">{t.value}</dd>
@@ -98,23 +134,35 @@ export function AdminOverview({ onGoPortfolio }: { onGoPortfolio: () => void }) 
               </tr>
             </thead>
             <tbody>
-              {rows.map(({ p, s }) => (
-                <tr key={p.id} className="border-t border-line">
-                  <td className="px-4 py-3 font-semibold text-navy">{p.name}</td>
-                  <td className={`px-3 py-3 text-right tabular-nums ${sort === "views" ? "font-semibold" : ""}`}>{s.views}</td>
-                  <td className={`px-3 py-3 text-right tabular-nums ${sort === "interest" ? "font-semibold" : ""}`}>
-                    {Math.round(s.interestRate * 100)}%
-                  </td>
-                  <td className={`px-3 py-3 text-right tabular-nums ${sort === "score" ? "font-semibold" : ""}`}>
-                    {s.overall ? s.overall.toFixed(1) : "–"}
-                  </td>
-                </tr>
-              ))}
+              {rows.map(({ p, s }) => {
+                const bold = (k: SortKey) => (sort === k ? "font-semibold" : "");
+                return (
+                  <tr key={p.id} className="border-t border-line align-top">
+                    <td className="px-4 py-3 font-semibold text-navy">{p.name}</td>
+                    <td className={`px-3 py-3 text-right tabular-nums ${bold("views")}`}>{s.views}</td>
+                    <td className={`px-3 py-3 text-right tabular-nums ${bold("interest")}`}>
+                      {pct(s.interestRate)}
+                      {s.versions && (
+                        <span className="block whitespace-nowrap text-xs font-normal text-muted">
+                          {pct(s.versions.before)} → {pct(s.versions.after)} after update
+                        </span>
+                      )}
+                    </td>
+                    <td className={`px-3 py-3 text-right tabular-nums ${bold("score")}`}>
+                      {s.overall ? s.overall.toFixed(1) : "–"}
+                    </td>
+                    <td className={`px-3 py-3 text-right tabular-nums ${bold("comments")}`}>{s.comments}</td>
+                    <td className={`px-3 py-3 text-right tabular-nums ${bold("engagement")}`}>{s.engagement}</td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
         <p className="text-xs text-muted">
-          Views are overview opens. Interest rate is the share of shown products marked interested.
+          Views are overview opens. Interest rate is the share of shown products marked interested; for updated listings
+          it is also split before and after the latest update. Engagement score: a view or an interest counts 1; a rating,
+          a written comment or an introduction request counts 2.
         </p>
       </section>
 

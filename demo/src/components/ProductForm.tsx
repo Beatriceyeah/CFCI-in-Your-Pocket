@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { Product } from "../types";
+import { TeamUploads } from "./TeamUploads";
 
 interface Props {
   product: Product;
@@ -39,6 +40,8 @@ export function ProductForm({ product, askChangeNote, submitLabel, onSubmit, onS
   const [problems, setProblems] = useState(product.problems.join("\n"));
   const [solution, setSolution] = useState(product.solution.join("\n"));
   const [next, setNext] = useState(product.next.join("\n"));
+  const [teamPhoto, setTeamPhoto] = useState(product.teamPhoto ?? "");
+  const [deckName, setDeckName] = useState(product.deckName ?? "");
   const [cover, setCover] = useState("");
   const [video, setVideo] = useState("");
   const [note, setNote] = useState(initialNote);
@@ -61,6 +64,8 @@ export function ProductForm({ product, askChangeNote, submitLabel, onSubmit, onS
             problems: lines(problems),
             solution: lines(solution),
             next: lines(next),
+            ...(teamPhoto ? { teamPhoto } : {}),
+            ...(deckName ? { deckName } : {}),
           },
           note.trim(),
         );
@@ -78,6 +83,7 @@ export function ProductForm({ product, askChangeNote, submitLabel, onSubmit, onS
       <Field id="pf-pitch-solution" label="The solution, in one sentence" hint="Shown right under the problem.">
         <textarea id="pf-pitch-solution" rows={2} className={INPUT} value={pitchSolution} onChange={(e) => setPitchSolution(e.target.value)} />
       </Field>
+      <TeamUploads idPrefix="pf" photo={teamPhoto} deckName={deckName} onPhoto={setTeamPhoto} onDeck={setDeckName} />
       <div className="grid grid-cols-2 gap-3">
         <Field id="pf-cover" label="Cover image">
           <label htmlFor="pf-cover" className="cursor-pointer rounded-xl border border-dashed border-royal px-3 py-2 text-center text-sm text-royal">

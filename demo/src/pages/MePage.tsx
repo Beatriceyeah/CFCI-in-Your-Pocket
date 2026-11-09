@@ -14,7 +14,6 @@ export function MePage() {
   const { state, dispatch } = useStore();
   const session = state.session;
   if (!session) return null;
-  const liked = Object.values(state.swipes).filter((s) => s.direction === "right").length;
 
   return (
     <div className="flex flex-col gap-5">
@@ -37,8 +36,8 @@ export function MePage() {
           )}
           {session.persona === "external" && (
             <div>
-              <dt className="text-xs font-semibold uppercase tracking-wider text-muted">Interested products</dt>
-              <dd className="font-medium">{liked}</dd>
+              <dt className="text-xs font-semibold uppercase tracking-wider text-muted">Teams helped</dt>
+              <dd className="font-medium">{state.evaluations.filter((e) => !e.partial).length}</dd>
             </div>
           )}
         </dl>
@@ -48,7 +47,7 @@ export function MePage() {
 
       {session.persona === "external" && (
         <section className="flex flex-col gap-3 rounded-2xl bg-surface p-5 ring-1 ring-line">
-          <h2 className="font-display text-lg font-semibold text-navy">My interests</h2>
+          <h2 className="font-display text-lg font-semibold text-navy">Customize your feed (optional)</h2>
           <div className="flex flex-wrap gap-2">
             {DIRECTIONS.map((d) => {
               const on = state.directions.includes(d.key);
@@ -68,7 +67,7 @@ export function MePage() {
               );
             })}
           </div>
-          <p className="text-sm text-muted">Ventures in these areas are ranked first in Browse. Nothing is hidden.</p>
+          <p className="text-sm text-muted">Ventures in these areas are shown first in Browse. Nothing is hidden, and you can change this any time.</p>
         </section>
       )}
 

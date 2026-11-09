@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { SEED_PRODUCTS } from "../data/products";
-import { averageOf, computeStats, isStale } from "./analytics";
+import { averageOf, computeStats, daysUntilDelist, isDelisted, isListed, isStale, wasUpdatedRecently } from "./analytics";
 
 describe("analytics", () => {
   it("averages and handles empty input", () => {
@@ -20,10 +20,38 @@ describe("analytics", () => {
     expect(swiped.interested).toBe(base.interested + 1);
   });
 
-  it("flags listings older than 30 days as stale", () => {
-    const stale = SEED_PRODUCTS.find((p) => p.id === "continuous-lhmf")!;
+  it("flags listings between 30 and 60 days as stale, and delists them after 60", () => {
+    const stale = SEED_PRODUCTS.find((p) => p.id === "cnt-solar")!;
     expect(isStale(stale)).toBe(true);
+    expect(isListed(stale)).toBe(true);
+    expect(daysUntilDelist(stale)).toBe(60 - stale.daysSinceUpdate);
+    const old = SEED_PRODUCTS.find((p) => p.id === "continuous-lhmf")!;
+    expect(isDelisted(old)).toBe(true);
+    expect(isListed(old)).toBe(false);
     expect(isStale(SEED_PRODUCTS[0]!)).toBe(false);
+  });
+
+  it("tags recently updated listings", () => {
+    expect(wasUpdatedRecently(SEED_PRODUCTS.find((p) => p.id === "circadian-labs")!)).toBe(true);
+    expect(wasUpdatedRecently(SEED_PRODUCTS.find((p) => p.id === "ontbi")!)).toBe(false);
+  });
+
+  it("weights deeper engagement double", () => {
+    const product = SEED_PRODUCTS[0]!;
+    const s = computeStats(product, {}, [], {}, []);
+    const rated = s.evaluations.filter((e) => Object.keys(e.ratings).length > 0).length;
+    expect(s.engagement).toBe(s.views + s.interested + 2 * rated + 2 * s.comments + 2 * s.introRequests);
+    const withIntro = computeStats(product, {}, [], {}, [
+      { id: "c", productId: product.id, fromName: "", fromRole: "", fromEmail: "", message: "", status: "pending", at: "" },
+    ]);
+    expect(withIntro.engagement).toBe(s.engagement + 2);
+  });
+
+  it("splits interest before and after an update", () => {
+    const updated = SEED_PRODUCTS.find((p) => p.id === "circadian-labs")!;
+    const s = computeStats(updated, {}, []);
+    expect(s.versions).not.toBeNull();
+    expect(computeStats(SEED_PRODUCTS.find((p) => p.id === "ontbi")!, {}, []).versions).toBeNull();
   });
 });
 

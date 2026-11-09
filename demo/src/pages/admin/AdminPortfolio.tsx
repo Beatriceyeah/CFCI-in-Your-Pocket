@@ -3,22 +3,23 @@ import { Icon } from "../../components/Icon";
 import { Chip } from "../../components/Pill";
 import { ProductInfoSheet } from "../../components/ProductInfoSheet";
 import { directionLabel } from "../../data/dimensions";
-import { freshnessLabel, isStale } from "../../lib/analytics";
+import { daysUntilDelist, freshnessLabel, isDelisted, isStale } from "../../lib/analytics";
 import { isFeatured } from "../../lib/order";
 import { useStore } from "../../store/StoreContext";
 import type { Product } from "../../types";
 import { FeaturePanel } from "./FeaturePanel";
 import { UploadProjectSheet } from "./UploadProjectSheet";
 
-type Filter = "all" | "draft" | "update" | "featured" | "archived";
+type Filter = "all" | "draft" | "update" | "delisted" | "featured" | "archived";
 
-const needsUpdate = (p: Product): boolean => p.status === "live" && isStale(p);
+const needsUpdate = (p: Product): boolean => isStale(p);
 
 const MATCH: Record<Filter, (p: Product) => boolean> = {
   all: () => true,
   draft: (p) => p.status === "draft",
   update: needsUpdate,
-  featured: (p) => p.status === "live" && isFeatured(p),
+  delisted: isDelisted,
+  featured: (p) => p.status === "live" && !isDelisted(p) && isFeatured(p),
   archived: (p) => p.status === "archived",
 };
 
@@ -26,6 +27,7 @@ const FILTERS: { key: Filter; label: string }[] = [
   { key: "all", label: "All" },
   { key: "draft", label: "Draft" },
   { key: "update", label: "Needs update" },
+  { key: "delisted", label: "Delisted" },
   { key: "featured", label: "Featured" },
   { key: "archived", label: "Archived" },
 ];
@@ -80,6 +82,14 @@ export function AdminPortfolio() {
         </button>
       );
     }
+    if (isDelisted(p)) {
+      const sent = !!state.reminders[p.id];
+      return (
+        <button type="button" disabled={sent} onClick={() => remind(p.id)} className={`${base} text-royal ring-1 ring-royal disabled:opacity-50`}>
+          {sent ? "Team reminded" : "Remind team"}
+        </button>
+      );
+    }
     if (isFeatured(p) && p.featuredUntil) {
       return (
         <button
@@ -93,7 +103,7 @@ export function AdminPortfolio() {
         </button>
       );
     }
-    if (isStale(p)) {
+    if (needsUpdate(p)) {
       const sent = !!state.reminders[p.id];
       return (
         <button type="button" disabled={sent} onClick={() => remind(p.id)} className={`${base} text-royal ring-1 ring-royal disabled:opacity-50`}>
@@ -142,7 +152,7 @@ export function AdminPortfolio() {
               <div className="flex items-center gap-3">
                 <div className="min-w-0 flex-1">
                   <button type="button" onClick={() => setViewing(p)} className="flex max-w-full items-center gap-2 text-left">
-                    {isFeatured(p) && (
+                    {isFeatured(p) && !isDelisted(p) && (
                       <span className="grid size-6 shrink-0 place-items-center rounded-full bg-interest text-white" role="img" aria-label="Featured">
                         <Icon name="star" className="size-3.5" />
                       </span>
@@ -152,8 +162,11 @@ export function AdminPortfolio() {
                   <p className="truncate text-sm text-muted">
                     {p.status === "draft" && <span className="font-semibold text-warn">Draft · </span>}
                     {p.status === "archived" && <span className="font-semibold">Archived · </span>}
+                    {isDelisted(p) && <span className="font-semibold text-danger">Delisted · </span>}
                     {directionLabel(p.category)} ·{" "}
-                    <span className={stale ? "font-semibold text-warn" : ""}>{freshnessLabel(p.daysSinceUpdate)}</span>
+                    <span className={stale || isDelisted(p) ? "font-semibold text-warn" : ""}>{freshnessLabel(p.daysSinceUpdate)}</span>
+                    {stale && <span className="text-warn"> · delists in {daysUntilDelist(p)} days</span>}
+                    {isDelisted(p) && <span> · hidden from Browse, students notified</span>}
                   </p>
                 </div>
 
@@ -181,7 +194,7 @@ export function AdminPortfolio() {
                               {isFeatured(p) ? "Change feature" : "Feature"}
                             </MenuItem>
                           )}
-                          {stale && !state.reminders[p.id] && (
+                          {(stale || isDelisted(p)) && !state.reminders[p.id] && (
                             <MenuItem onClick={() => { setMenuFor(null); remind(p.id); }}>Send reminder</MenuItem>
                           )}
                           {p.status === "live" && (
@@ -204,7 +217,8 @@ export function AdminPortfolio() {
 
       <p className="text-xs text-muted">
         Browse order for everyone: featured ventures first, then the viewer's interests, then everything else. Within each
-        group, the most recently updated listing comes first.
+        group, the most recently updated listing comes first. Listings not updated in 30 days get a reminder; after 60
+        days they leave Browse until the team posts an update, and the students are told.
       </p>
 
       {viewing && <ProductInfoSheet product={viewing} onClose={() => setViewing(null)} />}

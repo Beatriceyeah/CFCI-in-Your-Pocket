@@ -1,4 +1,4 @@
-export type Direction = "health" | "software" | "hardware" | "research";
+export type Direction = "health" | "software" | "hardware";
 export type Persona = "external" | "team" | "admin";
 export type Provider = "duke_netid" | "linkedin" | "google";
 export type ListingStatus = "draft" | "live" | "archived";
@@ -17,6 +17,10 @@ export interface MarketStat {
 export interface TeamMember {
   name: string;
   role: string;
+  /** Shown instead of a surname: teams stay anonymous until they have agreed to be named. */
+  year?: string;
+  /** Optional photo of this person, as a data URL. Placeholder avatar when empty. */
+  photo?: string;
 }
 
 export interface Product {
@@ -37,6 +41,12 @@ export interface Product {
   next: string[];
   team: TeamMember[];
   daysSinceUpdate: number;
+  /** Bumps each time the team posts an update; version 1 is the original listing. */
+  version?: number;
+  updateNote?: string;
+  /** Data URL of the team photo, or empty until the team uploads one. */
+  teamPhoto?: string;
+  deckName?: string;
   status: ListingStatus;
   ownerIds?: string[];
   uploadedBy?: { name: string; at: string };
@@ -77,6 +87,8 @@ export interface SwipeRecord {
   direction: "left" | "right";
   reason?: SkipReason;
   revisit: boolean;
+  /** The product version the viewer saw, so interest can be compared before and after an update. */
+  version?: number;
   at: string;
 }
 
@@ -91,6 +103,8 @@ export interface Evaluation {
   reactions: Record<ReactionKey, boolean>;
   introNote: string;
   comment: string;
+  /** Saved automatically but not submitted yet. Teams and CFCI still see it, marked as partial. */
+  partial?: boolean;
   at: string;
 }
 
@@ -107,7 +121,7 @@ export interface ShareList {
   name: string;
   note: string;
   productIds: string[];
-  recipients: string;
+  recipients?: string;
   createdAt: string;
 }
 

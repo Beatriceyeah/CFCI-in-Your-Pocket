@@ -17,6 +17,8 @@ interface Props {
   onOpen: (product: Product) => void;
   paused: boolean;
   featured: ReadonlySet<string>;
+  updated: ReadonlySet<string>;
+  onIntro: (product: Product) => void;
   /** When set, replaces the action buttons for a moment. */
   notice?: ReactNode;
 }
@@ -27,6 +29,8 @@ export function SwipeDeck({
   onOpen,
   paused,
   featured,
+  updated,
+  onIntro,
   notice,
 }: Props) {
   const [dx, setDx] = useState(0);
@@ -74,7 +78,7 @@ export function SwipeDeck({
             className="absolute inset-0 scale-[0.95] opacity-80"
             aria-hidden="true"
           >
-            <ProductCard product={next} featured={featured.has(next.id)} />
+            <ProductCard product={next} featured={featured.has(next.id)} updated={updated.has(next.id)} />
           </div>
         )}
         <div
@@ -111,7 +115,7 @@ export function SwipeDeck({
             setDx(0);
           }}
         >
-          <ProductCard product={top} featured={featured.has(top.id)} />
+          <ProductCard product={top} featured={featured.has(top.id)} updated={updated.has(top.id)} />
           <div
             className="pointer-events-none absolute left-5 top-5 rounded-lg border-2 border-interest bg-surface/90 px-3 py-1 font-display text-lg font-bold uppercase tracking-wider text-interest-deep"
             style={{ opacity: interest, transform: "rotate(-8deg)" }}
@@ -132,7 +136,7 @@ export function SwipeDeck({
           {notice}
         </div>
       ) : (
-        <div className="flex min-h-16 items-center justify-center gap-5">
+        <div className="flex min-h-16 items-center justify-center gap-4">
           <button
             type="button"
             onClick={() => commit("left")}
@@ -151,11 +155,19 @@ export function SwipeDeck({
           </button>
           <button
             type="button"
+            onClick={() => onIntro(top)}
+            aria-label="Request an introduction"
+            className="grid size-11 place-items-center rounded-full bg-surface text-royal shadow-md ring-1 ring-line"
+          >
+            <Icon name="mail" className="size-5" />
+          </button>
+          <button
+            type="button"
             onClick={() => commit("right")}
             aria-label="Interested"
             className="grid size-14 place-items-center rounded-full bg-interest text-white shadow-md hover:brightness-95"
           >
-            <Icon name="heart" className="size-6" />
+            <Icon name="eye" className="size-6" />
           </button>
         </div>
       )}

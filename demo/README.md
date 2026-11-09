@@ -16,22 +16,36 @@ npm install
 npm run dev      # then open the address it prints
 ```
 
-Sign-in is simulated: pick a role on the login page and continue. Use the **Demo:** pill in the header to switch
-between roles at any time.
+Each kind of user has their own link, so nobody has to pick a role:
+
+| Who | Link |
+| --- | --- |
+| Investor or alum | `#/investor` (the default) |
+| Student team | `#/student` |
+| CFCI staff | `#/staff` |
+
+For example, `Beatrice - CFCI in Your Pocket.html#/staff`, or `http://localhost:5173/#/staff` when running locally.
+Sign-in is simulated. Once signed in, the **Demo:** pill in the header switches between roles for presentations.
 
 ## What each role can do
 
 | Role | What to try |
 | --- | --- |
-| **Investor or alum** | Pick the directions you care about. Browse ventures by swiping or as a list, and search. Open a venture's overview. Mark interest, save to your shortlist, and share your take on the business lenses (Problem, Market, Edge and more). You can pick "not sure". Drafts autosave. Request an introduction to a team. |
-| **Student team** | See your product's card and edit it. Add teammates. Read feedback grouped by giver or by lens, and mark each comment Noted, Will address or Not now. See who asked to connect. |
-| **CFCI staff** | Dashboard of views, interest rate and scores per product, with a lens heatmap. Portfolio: upload a project, edit a listing, archive or restore it, send update reminders. Feature a venture for a set period. Review introduction requests and share a subset of products for feedback. |
+| **Investor or alum** | Browse ventures by swiping or as a list, and search. Tap the eye to show interest and see a thank-you in the middle of the screen. Open a venture: each section has a place to share your view right beside the data it is about (problem, market, edge, traction), and it saves as you go. Nothing is required; if you miss a lens you get a reminder before sending. Request an introduction from the card, the list or the overview. Update a take you already shared from the Shortlist. Skip everything and Browse loops back around. Customize interests under Me (optional). |
+| **Student team** | See your product's card and post an update, including a team photo and slide deck. Read feedback grouped by giver or by lens, with partly completed takes marked. See a countdown if your listing is close to being delisted. Add teammates and see who asked to connect. |
+| **CFCI staff** | Dashboard: feedback rate, written comments and an engagement score, plus views, interest rate (before and after an update) and average score per product, with a lens heatmap. Portfolio: upload a project, edit, archive or restore, remind teams, see delisted listings. Feature a venture for a set period. Review introduction requests and share a subset of products. |
 
 ## How it behaves
 
 - **Browse order** is the same for everyone: ventures CFCI is featuring (until their end date), then ventures
   matching the viewer's interests, then everything else. Within each group, the most recently updated listing
   comes first. Nothing is hidden. See `src/lib/order.ts`.
+- **Updated tag.** When a team posts an update, its card shows an "Updated" tag for a week, and viewers who already
+  looked at it see an alert at the top of Browse.
+- **Delisting.** A listing not updated in 30 days gets a reminder. After 60 days it leaves Browse until the team posts an
+  update, and the students see a notice on My product.
+- **Partly completed feedback** saves automatically and is already visible to the team and to staff, marked as partial.
+- **Engagement score:** a view or an interest counts 1; a rating, a written comment or an introduction request counts 2.
 - **Views** on the dashboard count overview opens. **Interest rate** is the share of shown products marked
   interested.
 - Engagement numbers (views, evaluations, interest) are generated from a fixed seed so the dashboard has
@@ -41,7 +55,8 @@ between roles at any time.
 ## Sample data
 
 - Products come from the IE790 Executive Summaries (`src/data/products.ts`).
-- Staff, student and viewer names and all emails are placeholders.
+- Staff, student and viewer names and all emails are placeholders. Students are shown as "Student founder N" with a
+  placeholder year; the team photos are placeholders until teams upload one.
 - Cover images are generated gradients, not real product images.
 
 ## Not in this demo

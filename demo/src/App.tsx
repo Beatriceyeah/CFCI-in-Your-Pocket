@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { replacePersonaHash, useHashPersona } from "./lib/route";
 import { Shell, type NavItem } from "./components/Shell";
 import { AdminIntroductions } from "./pages/admin/AdminIntroductions";
 import { AdminOverview } from "./pages/admin/AdminOverview";
@@ -6,7 +7,6 @@ import { AdminPortfolio } from "./pages/admin/AdminPortfolio";
 import { AdminShare } from "./pages/admin/AdminShare";
 import { BrowsePage } from "./pages/external/BrowsePage";
 import { ShortlistPage } from "./pages/external/ShortlistPage";
-import { ExternalOnboarding } from "./pages/ExternalOnboarding";
 import { LoginPage } from "./pages/LoginPage";
 import { MePage } from "./pages/MePage";
 import { TeamFeedbackPage } from "./pages/team/TeamFeedbackPage";
@@ -24,13 +24,18 @@ export function App() {
   const [tabs, setTabs] = useState<Partial<Record<Persona, string>>>({});
   const [editNote, setEditNote] = useState<string | null>(null);
   const session = state.session;
+  const hashPersona = useHashPersona();
 
   // A fresh sign-in or persona switch always lands on that persona's first screen (Browse for viewers).
   useEffect(() => setTabs({}), [session]);
+  // Opening the bare link goes to the investor page, or to wherever the signed-in person belongs.
+  useEffect(() => {
+    if (!hashPersona) replacePersonaHash(session?.persona ?? "external");
+  }, [hashPersona, session?.persona]);
 
-  if (!session) return <LoginPage />;
+  // Each kind of user has their own link. Opening someone else's link shows that login page.
+  if (!session || (hashPersona && hashPersona !== session.persona)) return <LoginPage persona={hashPersona ?? "external"} />;
   const persona = session.persona;
-  if (persona === "external" && !state.onboarded.external) return <ExternalOnboarding />;
 
   const active = tabs[persona] ?? FIRST_TAB[persona];
   const go = (key: string) => setTabs((t) => ({ ...t, [persona]: key }));

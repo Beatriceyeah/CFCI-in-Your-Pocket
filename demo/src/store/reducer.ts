@@ -12,7 +12,6 @@ import type {
   ConnectionStatus,
   Direction,
   Evaluation,
-  EvaluationDraft,
   FeedbackStatus,
   ListingStatus,
   Persona,
@@ -26,11 +25,11 @@ import type {
 
 export interface State {
   session: Session | null;
-  onboarded: Record<Persona, boolean>;
   directions: Direction[];
   swipes: Record<string, SwipeRecord>;
   evaluations: Evaluation[];
-  drafts: Record<string, EvaluationDraft>;
+  /** The product version this viewer last saw, so updates can be flagged. */
+  seen: Record<string, number>;
   products: Product[];
   changelog: ChangeEntry[];
   feedbackStatus: Record<string, FeedbackStatus>;
@@ -46,10 +45,8 @@ export type Action =
       persona: Persona;
       provider: Provider;
       userId?: string;
-      fresh?: boolean;
     }
   | { type: "logout" }
-  | { type: "finish_onboarding" }
   | { type: "set_directions"; directions: Direction[] }
   | { type: "swipe"; productId: string; direction: "left" | "right" }
   | { type: "undo_swipe"; productId: string }
@@ -59,7 +56,6 @@ export type Action =
       reason?: SkipReason;
       revisit?: boolean;
     }
-  | { type: "save_draft"; productId: string; draft: EvaluationDraft }
   | { type: "save_evaluation"; evaluation: Evaluation }
   | {
       type: "update_product";
@@ -82,11 +78,11 @@ export type Action =
 
 export const initialState = (): State => ({
   session: null,
-  onboarded: { external: false, team: false, admin: true },
   directions: [],
   swipes: {},
   evaluations: [],
-  drafts: {},
+  // The sample viewer has opened these before, so their later updates show up as alerts.
+  seen: { "circadian-labs": 1, kinema: 1 },
   products: SEED_PRODUCTS,
   changelog: [],
   feedbackStatus: {},
@@ -144,10 +140,6 @@ export function reducer(state: State, action: Action): State {
     case "login":
       return {
         ...state,
-        // Signing in from the login page counts as a new visit, so onboarding shows again.
-        onboarded: action.fresh
-          ? { ...state.onboarded, [action.persona]: action.persona === "admin" }
-          : state.onboarded,
         session: {
           persona: action.persona,
           provider: action.provider,
@@ -156,28 +148,25 @@ export function reducer(state: State, action: Action): State {
       };
     case "logout":
       return { ...state, session: null };
-    case "finish_onboarding":
-      return state.session
-        ? {
-            ...state,
-            onboarded: { ...state.onboarded, [state.session.persona]: true },
-          }
-        : state;
     case "set_directions":
       return { ...state, directions: action.directions };
-    case "swipe":
+    case "swipe": {
+      const version = state.products.find((p) => p.id === action.productId)?.version ?? 1;
       return {
         ...state,
+        seen: { ...state.seen, [action.productId]: version },
         swipes: {
           ...state.swipes,
           [action.productId]: {
             productId: action.productId,
             direction: action.direction,
             revisit: false,
+            version,
             at: new Date().toISOString(),
           },
         },
       };
+    }
     case "undo_swipe": {
       const { [action.productId]: _removed, ...rest } = state.swipes;
       return { ...state, swipes: rest };
@@ -197,16 +186,9 @@ export function reducer(state: State, action: Action): State {
         },
       };
     }
-    case "save_draft":
-      return {
-        ...state,
-        drafts: { ...state.drafts, [action.productId]: action.draft },
-      };
     case "save_evaluation": {
-      const { [action.evaluation.productId]: _draft, ...drafts } = state.drafts;
       return {
         ...state,
-        drafts,
         evaluations: [
           ...state.evaluations.filter(
             (e) => e.productId !== action.evaluation.productId,
@@ -223,7 +205,13 @@ export function reducer(state: State, action: Action): State {
         ...state,
         products: state.products.map((p) =>
           p.id === action.productId
-            ? { ...p, ...action.patch, daysSinceUpdate: 0 }
+            ? {
+                ...p,
+                ...action.patch,
+                daysSinceUpdate: 0,
+                version: (p.version ?? 1) + 1,
+                updateNote: action.note || p.updateNote,
+              }
             : p,
         ),
         changelog: [
@@ -279,11 +267,15 @@ export function reducer(state: State, action: Action): State {
     case "upload_product": {
       const by = state.session?.name ?? "CFCI staff";
       const at = new Date().toISOString();
-      const exists = state.products.some((p) => p.id === action.product.id);
+      const before = state.products.find((p) => p.id === action.product.id);
+      const exists = !!before;
       const product: Product = {
         ...action.product,
         status: "live",
         daysSinceUpdate: 0,
+        version: before?.version ?? 1,
+        teamPhoto: action.product.teamPhoto ?? before?.teamPhoto,
+        deckName: action.product.deckName ?? before?.deckName,
         uploadedBy: { name: by, at },
       };
       return {
@@ -305,14 +297,17 @@ export function reducer(state: State, action: Action): State {
         ],
       };
     }
-    case "record_open":
+    case "record_open": {
+      const version = state.products.find((p) => p.id === action.productId)?.version ?? 1;
       return {
         ...state,
+        seen: { ...state.seen, [action.productId]: version },
         opens: {
           ...state.opens,
           [action.productId]: (state.opens[action.productId] ?? 0) + 1,
         },
       };
+    }
     case "add_owner": {
       const user = REGISTERED_STUDENTS.find((u) => u.id === action.userId);
       const product = state.products.find((p) => p.id === action.productId);

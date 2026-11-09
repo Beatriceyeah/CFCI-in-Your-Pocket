@@ -1,16 +1,15 @@
 import { useState } from "react";
 import { Chip } from "../../components/Pill";
 import { directionLabel } from "../../data/dimensions";
-import { FRESH_DAYS, freshnessLabel } from "../../lib/analytics";
+import { FRESH_DAYS, freshnessLabel, isListed } from "../../lib/analytics";
 import { useStore } from "../../store/StoreContext";
 
 export function AdminShare() {
   const { state, dispatch } = useStore();
-  const live = state.products.filter((p) => p.status === "live");
+  const live = state.products.filter(isListed);
   const [selected, setSelected] = useState<string[]>([]);
   const [name, setName] = useState("");
   const [note, setNote] = useState("");
-  const [recipients, setRecipients] = useState("");
   const [copied, setCopied] = useState<string | null>(null);
 
   const toggle = (id: string) =>
@@ -25,14 +24,12 @@ export function AdminShare() {
         name: name.trim(),
         note: note.trim(),
         productIds: selected,
-        recipients: recipients.trim() || "Anyone with the link",
         createdAt: new Date().toISOString(),
       },
     });
     setSelected([]);
     setName("");
     setNote("");
-    setRecipients("");
   };
 
   const copy = async (id: string) => {
@@ -49,7 +46,7 @@ export function AdminShare() {
       <div>
         <h1 className="font-display text-3xl font-bold text-navy">Share for feedback</h1>
         <p className="text-sm text-muted">
-          Pick a subset of the portfolio and send it to a group. They see it as a collection in Browse.
+          Pick a subset of the portfolio and share it as a collection with a link.
         </p>
       </div>
 
@@ -80,16 +77,10 @@ export function AdminShare() {
             </li>
           ))}
         </ul>
-        <div className="grid gap-3 sm:grid-cols-2">
-          <label className="flex flex-col gap-1 text-sm font-semibold text-navy" htmlFor="sh-name">
-            Collection name
-            <input id="sh-name" value={name} onChange={(e) => setName(e.target.value)} className="rounded-xl border border-line px-3 py-2 font-normal text-ink" placeholder="Spring investor preview" />
-          </label>
-          <label className="flex flex-col gap-1 text-sm font-semibold text-navy" htmlFor="sh-to">
-            Send to
-            <input id="sh-to" value={recipients} onChange={(e) => setRecipients(e.target.value)} className="rounded-xl border border-line px-3 py-2 font-normal text-ink" placeholder="Group name or emails" />
-          </label>
-        </div>
+        <label className="flex flex-col gap-1 text-sm font-semibold text-navy" htmlFor="sh-name">
+          Collection name
+          <input id="sh-name" value={name} onChange={(e) => setName(e.target.value)} className="rounded-xl border border-line px-3 py-2 font-normal text-ink" placeholder="Spring investor preview" />
+        </label>
         <label className="flex flex-col gap-1 text-sm font-semibold text-navy" htmlFor="sh-note">
           Message to viewers
           <textarea id="sh-note" rows={2} value={note} onChange={(e) => setNote(e.target.value)} className="rounded-xl border border-line px-3 py-2 font-normal text-ink" placeholder="What you would like their feedback on" />
@@ -110,7 +101,7 @@ export function AdminShare() {
               <div className="min-w-0 flex-1 basis-56">
                 <p className="font-display font-semibold text-navy">{l.name}</p>
                 <p className="text-sm text-muted">
-                  {l.productIds.length} products · {l.recipients}
+                  {l.productIds.length} products{l.recipients ? ` · ${l.recipients}` : ""}
                 </p>
               </div>
               <button type="button" onClick={() => copy(l.id)} className="rounded-full px-4 py-2 text-sm font-semibold text-royal ring-1 ring-royal">

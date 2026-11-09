@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { CoverArt } from "../../components/CoverArt";
 import { ProductInfoSheet } from "../../components/ProductInfoSheet";
+import { isListed } from "../../lib/analytics";
 import { ownedProduct, useStore } from "../../store/StoreContext";
 import type { Product } from "../../types";
 
@@ -8,7 +9,7 @@ export function TeamExplorePage() {
   const { state } = useStore();
   const mine = ownedProduct(state);
   const [open, setOpen] = useState<Product | null>(null);
-  const others = state.products.filter((p) => p.status === "live" && p.id !== mine?.id);
+  const others = state.products.filter((p) => isListed(p) && p.id !== mine?.id);
 
   return (
     <div className="flex flex-col gap-4">

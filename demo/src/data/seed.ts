@@ -131,6 +131,12 @@ for (const p of SEED_PRODUCTS) {
       notes[dim] = pool[Math.floor(rand() * pool.length)] ?? "";
     }
     const viewerLabel = VIEWERS[Math.floor(rand() * VIEWERS.length)] ?? "Viewer";
+    // A few sample takes were saved automatically and never submitted.
+    const partial = i > 0 && rand() < 0.14;
+    if (partial) {
+      (["readiness", "revenue", "edge"] as const).forEach((k) => delete ratings[k]);
+      delete notes.edge;
+    }
     SEED_EVALUATIONS.push({
       id: `seed-${p.id}-${i}`,
       productId: p.id,
@@ -145,12 +151,30 @@ for (const p of SEED_PRODUCTS) {
       },
       introNote: "",
       comment,
+      partial: partial || undefined,
       at: new Date(Date.now() - Math.floor(rand() * 20) * DAY_MS).toISOString(),
     });
   }
 }
 
 export const SEED_UNIQUE_VIEWERS = 148;
+
+// For listings the team has updated: how interest split before and after the latest version.
+// Sample numbers only; they exist so the dashboard can show the comparison.
+const AFTER_SHIFT: Record<string, number> = { "circadian-labs": 0.14, "clinical-sentinel": -0.05, kinema: 0.08 };
+export const SEED_VERSION_STATS: Record<string, { before: { shown: number; interested: number }; after: { shown: number; interested: number } }> = {};
+for (const p of SEED_PRODUCTS) {
+  const s = SEED_STATS[p.id];
+  const shift = AFTER_SHIFT[p.id];
+  if (!s || shift === undefined) continue;
+  const rate = s.interested / s.views;
+  const afterShown = Math.round(s.views * 0.22);
+  const afterInterested = Math.min(afterShown, Math.max(0, Math.round(afterShown * (rate + shift))));
+  SEED_VERSION_STATS[p.id] = {
+    before: { shown: s.views - afterShown, interested: s.interested - afterInterested },
+    after: { shown: afterShown, interested: afterInterested },
+  };
+}
 
 export const SEED_LISTS: ShareList[] = [
   {

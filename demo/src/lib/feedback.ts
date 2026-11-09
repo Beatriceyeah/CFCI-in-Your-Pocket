@@ -11,13 +11,14 @@ export interface FeedbackItem {
   field: FeedbackField;
   text: string;
   rating?: number;
+  partial?: boolean;
 }
 
 /** Flattens evaluations into individual comments: one per lens note, plus overall comments and intro offers. */
 export function feedbackItems(evaluations: Evaluation[]): FeedbackItem[] {
   const items: FeedbackItem[] = [];
   for (const e of evaluations) {
-    const base = { evalId: e.id, viewerLabel: e.viewerLabel, viewerName: e.viewerName ?? e.viewerLabel, at: e.at };
+    const base = { evalId: e.id, viewerLabel: e.viewerLabel, viewerName: e.viewerName ?? e.viewerLabel, at: e.at, partial: e.partial };
     (Object.keys(e.notes) as DimensionKey[]).forEach((dim) => {
       const text = e.notes[dim]?.trim();
       if (text) items.push({ ...base, key: `${e.id}:${dim}`, field: dim, text, rating: e.ratings[dim] });

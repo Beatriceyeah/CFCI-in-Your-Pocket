@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { CoverArt } from "../../components/CoverArt";
-import { EvaluateSheet } from "../../components/EvaluateSheet";
+import { IntroButton, IntroSheet } from "../../components/ConnectBox";
 import { ProductInfoSheet } from "../../components/ProductInfoSheet";
 import { Pill } from "../../components/Pill";
 import { SKIP_REASONS } from "../../data/dimensions";
@@ -12,22 +12,23 @@ type Tab = "todo" | "done" | "skipped";
 export function ShortlistPage() {
   const { state, dispatch } = useStore();
   const [tab, setTab] = useState<Tab>("todo");
-  const [evaluating, setEvaluating] = useState<Product | null>(null);
-  const [viewing, setViewing] = useState<Product | null>(null);
+  const [viewing, setViewing] = useState<{ product: Product; focus: boolean } | null>(null);
+  const [intro, setIntro] = useState<Product | null>(null);
 
   const byId = (id: string) => state.products.find((p) => p.id === id);
   const liked = Object.values(state.swipes)
     .filter((s) => s.direction === "right")
     .map((s) => byId(s.productId))
     .filter((p): p is Product => !!p);
-  const evaluated = new Set(state.evaluations.map((e) => e.productId));
-  const todo = liked.filter((p) => !evaluated.has(p.id));
-  const done = liked.filter((p) => evaluated.has(p.id));
+  const takeOf = (id: string) => state.evaluations.find((e) => e.productId === id);
+  const todo = liked.filter((p) => !takeOf(p.id) || takeOf(p.id)?.partial);
+  const done = liked.filter((p) => takeOf(p.id) && !takeOf(p.id)?.partial);
+  const helped = state.evaluations.filter((e) => !e.partial).length;
   const skipped = Object.values(state.swipes).filter((s) => s.direction === "left");
 
   const tabs: { key: Tab; label: string; count: number }[] = [
-    { key: "todo", label: "To rate", count: todo.length },
-    { key: "done", label: "Rated", count: done.length },
+    { key: "todo", label: "To help", count: todo.length },
+    { key: "done", label: "Shared", count: done.length },
     { key: "skipped", label: "Skipped", count: skipped.length },
   ];
 
@@ -35,7 +36,7 @@ export function ShortlistPage() {
     <li key={p.id} className="flex items-center gap-3 rounded-2xl bg-surface p-3 ring-1 ring-line">
       <button type="button" onClick={() => {
           dispatch({ type: "record_open", productId: p.id });
-          setViewing(p);
+          setViewing({ product: p, focus: false });
         }} className="shrink-0" aria-label={`Open ${p.name}`}>
         <CoverArt product={p} className="size-16 rounded-xl" />
       </button>
@@ -57,12 +58,17 @@ export function ShortlistPage() {
       <div>
         <h1 className="font-display text-2xl font-bold text-navy">
           {todo.length
-            ? `${todo.length} product${todo.length > 1 ? "s" : ""} waiting for your take`
+            ? `${todo.length} team${todo.length > 1 ? "s" : ""} could use your help`
             : "Your shortlist"}
         </h1>
         <p className="text-sm text-muted">
-          Five quick scores tell the team what you think. It takes about a minute each.
+          Students read every note. A minute of your view helps a team decide what to build next.
         </p>
+        {helped > 0 && (
+          <p className="mt-2 rounded-2xl bg-interest/10 px-4 py-2 text-sm font-semibold text-interest-deep">
+            Thank you. You have helped {helped} {helped === 1 ? "team" : "teams"} so far.
+          </p>
+        )}
       </div>
       <div className="grid grid-cols-3 gap-1 rounded-full bg-surface p-1 ring-1 ring-line" role="tablist">
         {tabs.map((t) => (
@@ -87,21 +93,24 @@ export function ShortlistPage() {
             ? todo.map((p) =>
                 row(
                   p,
-                  <button
-                    type="button"
-                    onClick={() => setEvaluating(p)}
-                    className="shrink-0 rounded-full bg-navy px-4 py-2 text-sm font-semibold text-white"
-                  >
-                    {state.drafts[p.id] ? "Continue my take" : "Share your take"}
-                  </button>,
-                  state.drafts[p.id] ? (
+                  <div className="flex shrink-0 flex-col items-end gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => setViewing({ product: p, focus: true })}
+                      className="rounded-full bg-navy px-4 py-2 text-sm font-semibold text-white"
+                    >
+                      {takeOf(p.id) ? "Continue" : "Help this team"}
+                    </button>
+                    <IntroButton product={p} compact onOpen={() => setIntro(p)} />
+                  </div>,
+                  takeOf(p.id) ? (
                     <div className="mt-1">
-                      <Pill tone="warn">Draft saved</Pill>
+                      <Pill tone="warn">Partially completed</Pill>
                     </div>
                   ) : undefined,
                 ),
               )
-            : empty("Swipe right in Browse to build your shortlist."))}
+            : empty("Tap the eye in Browse to build your shortlist."))}
         {tab === "done" &&
           (done.length
             ? done.map((p) =>
@@ -109,17 +118,17 @@ export function ShortlistPage() {
                   p,
                   <button
                     type="button"
-                    onClick={() => setEvaluating(p)}
+                    onClick={() => setViewing({ product: p, focus: true })}
                     className="shrink-0 rounded-full px-4 py-2 text-sm font-semibold text-royal ring-1 ring-royal"
                   >
-                    Edit my take
+                    Update my take
                   </button>,
                   <div className="mt-1">
-                    <Pill tone="good">Rated</Pill>
+                    <Pill tone="good">Shared</Pill>
                   </div>,
                 ),
               )
-            : empty("Nothing rated yet."))}
+            : empty("Nothing shared yet."))}
         {tab === "skipped" &&
           (skipped.length
             ? skipped.flatMap((s) => {
@@ -144,22 +153,17 @@ export function ShortlistPage() {
             : empty("Nothing skipped."))}
       </ul>
 
-      {viewing && <ProductInfoSheet product={viewing} onClose={() => setViewing(null)} />}
-      {evaluating && state.session && (
-        <EvaluateSheet
-          product={evaluating}
-          existing={state.evaluations.find((e) => e.productId === evaluating.id)}
-          draft={state.drafts[evaluating.id]}
-          viewerLabel={state.session.roleLabel}
-          onDraft={(draft) => dispatch({ type: "save_draft", productId: evaluating.id, draft })}
-          onSave={(evaluation) => {
-            dispatch({ type: "save_evaluation", evaluation });
-            setEvaluating(null);
-            setTab("done");
-          }}
-          onClose={() => setEvaluating(null)}
+      {viewing && (
+        <ProductInfoSheet
+          product={viewing.product}
+          feedback
+          focusFeedback={viewing.focus}
+          onShared={() => setTab("done")}
+          onClose={() => setViewing(null)}
+          footer={<IntroButton product={viewing.product} onOpen={() => setIntro(viewing.product)} />}
         />
       )}
+      {intro && <IntroSheet product={intro} onClose={() => setIntro(null)} />}
     </div>
   );
 }

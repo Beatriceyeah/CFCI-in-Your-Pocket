@@ -136,11 +136,12 @@ function CommentRow({
       </div>
       <p className="text-[0.95rem] leading-snug">{item.text}</p>
       <div className="mt-1 flex items-center justify-between gap-3 text-xs text-muted">
-        <span>
+        <span className="flex items-center gap-2">
           {new Date(item.at).toLocaleDateString(undefined, {
             month: "short",
             day: "numeric",
           })}
+          {item.partial && <Pill tone="warn">Partial</Pill>}
         </span>
         <span className="flex items-center gap-4">
           {status === "planned" && (
@@ -262,8 +263,9 @@ export function TeamFeedbackPage({
       <div>
         <h1 className="font-display text-2xl font-bold text-navy">Feedback</h1>
         <p className="text-sm text-muted">
-          From {stats.evaluations.length} evaluations. Each comment shows who
-          gave it.
+          From {stats.evaluations.length} evaluations
+          {stats.partial ? `, ${stats.partial} still partly completed` : ""}.
+          Each comment shows who gave it.
         </p>
       </div>
 

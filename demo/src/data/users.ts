@@ -1,9 +1,10 @@
 import type { RegisteredUser } from "../types";
+import { LOGIN_NAMES, SHOW_STUDENT_NAMES } from "./teamNames";
 
 // Students registered through Duke NetID. Emails are placeholders for the demo.
 export const REGISTERED_STUDENTS: RegisteredUser[] = [
-  { id: "u-kylie", name: "Student founder 1", email: "founder1@example.edu" },
-  { id: "u-brian", name: "Student founder 2", email: "founder2@example.edu" },
+  { id: "u-kylie", name: SHOW_STUDENT_NAMES ? LOGIN_NAMES.kylie : "Student founder 1", email: "founder1@example.edu" },
+  { id: "u-brian", name: SHOW_STUDENT_NAMES ? LOGIN_NAMES.brian : "Student founder 2", email: "founder2@example.edu" },
   { id: "u-maya", name: "Maya Chen", email: "maya.chen@example.edu" },
   { id: "u-luis", name: "Luis Ortega", email: "luis.ortega@example.edu" },
   { id: "u-ananya", name: "Ananya Rao", email: "ananya.rao@example.edu" },

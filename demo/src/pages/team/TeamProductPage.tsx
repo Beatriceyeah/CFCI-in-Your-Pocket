@@ -4,7 +4,7 @@ import { ProductInfoSheet } from "../../components/ProductInfoSheet";
 import { ProductCard } from "../../components/ProductCard";
 import { Pill } from "../../components/Pill";
 import { Sheet } from "../../components/Sheet";
-import { computeStats, freshnessLabel, isStale } from "../../lib/analytics";
+import { computeStats, daysUntilDelist, FRESH_DAYS, freshnessLabel, isDelisted } from "../../lib/analytics";
 import { ownedProduct, useStore } from "../../store/StoreContext";
 import { NoProduct } from "./NoProduct";
 import { TeamMembers } from "./TeamMembers";
@@ -44,8 +44,12 @@ export function TeamProductPage({ editNote, clearEditNote }: Props) {
   const product = ownedProduct(state);
   if (!product) return <NoProduct />;
 
-  const stats = computeStats(product, state.swipes, state.evaluations, state.opens);
-  const status = STATUS[product.status];
+  const stats = computeStats(product, state.swipes, state.evaluations, state.opens, state.connections);
+  const delisted = isDelisted(product);
+  const aging = product.status === "live" && !delisted && product.daysSinceUpdate > FRESH_DAYS;
+  const status = delisted
+    ? { label: "Delisted", tone: "bad" as const, note: "Hidden from Browse because it has not been updated in 60 days." }
+    : STATUS[product.status];
   const reminder = state.reminders[product.id];
   const changes = state.changelog.filter((c) => c.productId === product.id);
   const showForm = editing || editNote !== null;
@@ -62,12 +66,32 @@ export function TeamProductPage({ editNote, clearEditNote }: Props) {
         </h1>
         <div className="flex flex-wrap items-center gap-2">
           <Pill tone={status.tone}>{status.label}</Pill>
-          <Pill tone={isStale(product) ? "warn" : "neutral"}>
+          <Pill tone={delisted || aging ? "warn" : "neutral"}>
             {freshnessLabel(product.daysSinceUpdate)}
           </Pill>
         </div>
         <p className="text-sm text-muted">{status.note}</p>
       </div>
+
+      {(delisted || aging) && (
+        <div className="rounded-2xl bg-warn-soft p-4 text-sm text-warn" role="status">
+          <p className="font-semibold">
+            {delisted ? "Your listing is hidden from Browse" : `Your listing will be hidden in ${daysUntilDelist(product)} days`}
+          </p>
+          <p>
+            {delisted
+              ? "Listings that go 60 days without an update leave Browse. Post an update and it comes back right away."
+              : `It has been ${product.daysSinceUpdate} days since your last update. Post a short update to keep investors seeing you.`}
+          </p>
+          <button
+            type="button"
+            onClick={() => setEditing(true)}
+            className="mt-2 rounded-full bg-warn px-4 py-1.5 font-semibold text-white"
+          >
+            Post an update
+          </button>
+        </div>
+      )}
 
       <div
         className="grid grid-cols-3 gap-1 rounded-full bg-surface p-1 ring-1 ring-line"

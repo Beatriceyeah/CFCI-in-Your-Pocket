@@ -95,8 +95,7 @@ export const SKIP_REASONS: { key: SkipReason; label: string }[] = [
 export const DIRECTIONS: { key: Direction; label: string; blurb: string }[] = [
   { key: "health", label: "Health", blurb: "Clinical tools, devices and care delivery" },
   { key: "software", label: "Software & AI", blurb: "Platforms, data and decision support" },
-  { key: "hardware", label: "Hardware", blurb: "Sensors, imaging and devices" },
-  { key: "research", label: "Research", blurb: "Science-led platforms and new materials" },
+  { key: "hardware", label: "Hardware", blurb: "Sensors, imaging and devices, including new materials" },
 ];
 
 export const STAGE_NOTE: Record<Stage, string> = {

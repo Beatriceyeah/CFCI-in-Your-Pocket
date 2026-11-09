@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Chip } from "../../components/Pill";
 import { Sheet } from "../../components/Sheet";
+import { TeamUploads } from "../../components/TeamUploads";
 import { DIRECTIONS } from "../../data/dimensions";
 import { REGISTERED_STUDENTS } from "../../data/users";
 import { useStore } from "../../store/StoreContext";
@@ -63,6 +64,8 @@ export function UploadProjectSheet({ product, onClose }: Props) {
   const [samNote, setSamNote] = useState(marketOf(product, "SAM")?.note ?? "");
   const [team, setTeam] = useState(product?.team.map((t) => `${t.name}, ${t.role}`).join("\n") ?? "");
   const [owners, setOwners] = useState<string[]>(product?.ownerIds ?? []);
+  const [teamPhoto, setTeamPhoto] = useState(product?.teamPhoto ?? "");
+  const [deckName, setDeckName] = useState(product?.deckName ?? "");
   const [cover, setCover] = useState("");
   const [video, setVideo] = useState("");
   const [tried, setTried] = useState(false);
@@ -109,6 +112,8 @@ export function UploadProjectSheet({ product, onClose }: Props) {
         next: lines(next),
         team: members,
         ownerIds: owners,
+        teamPhoto: teamPhoto || undefined,
+        deckName: deckName || undefined,
         daysSinceUpdate: 0,
         status: "live",
       },
@@ -165,6 +170,7 @@ export function UploadProjectSheet({ product, onClose }: Props) {
         <Field id="up-pitch-solution" label="The solution, in one sentence" hint="Second line on the browse card.">
           <textarea id="up-pitch-solution" rows={2} className={`${INPUT} ${tried && !pitchSolution.trim() ? "ring-2 ring-royal" : ""}`} value={pitchSolution} onChange={(e) => setPitchSolution(e.target.value)} />
         </Field>
+        <TeamUploads idPrefix="up" photo={teamPhoto} deckName={deckName} onPhoto={setTeamPhoto} onDeck={setDeckName} />
         <div className="grid grid-cols-2 gap-3">
           <Field id="up-cover" label="Cover image">
             <label htmlFor="up-cover" className="cursor-pointer rounded-xl border border-dashed border-royal px-3 py-2 text-center text-sm text-royal">

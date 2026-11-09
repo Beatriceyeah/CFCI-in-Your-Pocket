@@ -1,50 +1,35 @@
-import { useState } from "react";
 import { CardPreview } from "../components/CardPreview";
 import { Logo } from "../components/Logo";
 import { useStore } from "../store/StoreContext";
 import type { Persona, Provider } from "../types";
 
-type Role = "investor" | "student" | "staff";
-
 interface RoleOption {
-  key: Role;
-  label: string;
   line: string;
-  persona: Persona;
   signIns: { label: string; provider: Provider }[];
 }
 
-const ROLES: RoleOption[] = [
-  {
-    key: "investor",
-    label: "Investor or alum",
-    line: "Browse ventures, share your take, ask for introductions.",
-    persona: "external",
+// One login page per link. People never choose a role; the link they were given decides it.
+const ROLES: Record<Persona, RoleOption> = {
+  external: {
+    line: "Browse Duke ventures, share your view to help the teams, ask for introductions.",
     signIns: [
       { label: "Continue with LinkedIn", provider: "linkedin" },
       { label: "Continue with Google", provider: "google" },
     ],
   },
-  {
-    key: "student",
-    label: "Student team",
+  team: {
     line: "Update your product and read what people think.",
-    persona: "team",
     signIns: [{ label: "Continue with Duke NetID", provider: "duke_netid" }],
   },
-  {
-    key: "staff",
-    label: "CFCI staff",
+  admin: {
     line: "Upload projects, track engagement, make introductions.",
-    persona: "admin",
     signIns: [{ label: "Continue with Duke NetID", provider: "duke_netid" }],
   },
-];
+};
 
-export function LoginPage() {
+export function LoginPage({ persona }: { persona: Persona }) {
   const { dispatch } = useStore();
-  const [role, setRole] = useState<Role>("investor");
-  const current = ROLES.find((r) => r.key === role) ?? ROLES[0]!;
+  const current = ROLES[persona];
 
   return (
     <div className="mx-auto flex min-h-full w-full max-w-md flex-col px-6">
@@ -68,58 +53,37 @@ export function LoginPage() {
         </div>
         <CardPreview />
 
-        <main className="flex flex-col gap-6">
-          <div
-            className="grid grid-cols-3 gap-1 rounded-2xl bg-line/60 p-1"
-            role="tablist"
-            aria-label="I am a"
-          >
-            {ROLES.map((r) => (
+        <main className="flex flex-col gap-4">
+          <p className="text-center text-[0.95rem] text-muted">{current.line}</p>
+          <div className="flex flex-col gap-3">
+            {current.signIns.map((s, i) => (
               <button
-                key={r.key}
+                key={s.label}
                 type="button"
-                role="tab"
-                aria-selected={role === r.key}
-                onClick={() => setRole(r.key)}
-                className={`rounded-xl px-2 py-3 text-sm font-semibold leading-tight transition ${
-                  role === r.key
-                    ? "bg-surface text-navy shadow-sm"
-                    : "text-muted hover:text-ink"
+                onClick={() =>
+                  dispatch({ type: "login", persona, provider: s.provider })
+                }
+                className={`rounded-full px-6 py-4 text-base font-semibold transition ${
+                  i === 0
+                    ? "bg-navy text-white hover:bg-royal"
+                    : "bg-surface text-navy ring-1 ring-line hover:ring-royal"
                 }`}
               >
-                {r.label}
+                {s.label}
               </button>
             ))}
           </div>
-
-          <div key={role} className="anim-fade flex flex-col gap-4">
-            <p className="text-center text-[0.95rem] text-muted">
-              {current.line}
-            </p>
-            <div className="flex flex-col gap-3">
-              {current.signIns.map((s, i) => (
-                <button
-                  key={s.label}
-                  type="button"
-                  onClick={() =>
-                    dispatch({
-                      type: "login",
-                      persona: current.persona,
-                      provider: s.provider,
-                      fresh: true,
-                    })
-                  }
-                  className={`rounded-full px-6 py-4 text-base font-semibold transition ${
-                    i === 0
-                      ? "bg-navy text-white hover:bg-royal"
-                      : "bg-surface text-navy ring-1 ring-line hover:ring-royal"
-                  }`}
-                >
-                  {s.label}
-                </button>
-              ))}
-            </div>
-          </div>
+          {persona === "team" && (
+            <button
+              type="button"
+              onClick={() =>
+                dispatch({ type: "login", persona, provider: "duke_netid", userId: "u-tom" })
+              }
+              className="text-center text-sm font-medium text-royal underline underline-offset-2"
+            >
+              Demo: sign in as a team whose listing is about to be delisted
+            </button>
+          )}
         </main>
       </div>
 

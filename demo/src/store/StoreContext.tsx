@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useReducer, type Dispatch, type R
 import type { Product } from "../types";
 import { initialState, reducer, type Action, type State } from "./reducer";
 
-const STORAGE_KEY = "cfci-pocket-demo-v7";
+const STORAGE_KEY = "cfci-pocket-demo-v9";
 
 function load(): State {
   try {

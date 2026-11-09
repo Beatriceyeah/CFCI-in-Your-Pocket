@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from "react";
 import { DEFAULT_STAFF_ID, DEFAULT_STUDENT_ID } from "../data/users";
+import { setPersonaHash } from "../lib/route";
 import { useStore } from "../store/StoreContext";
 import type { Persona, Provider } from "../types";
 import { Icon, type IconName } from "./Icon";
@@ -63,6 +64,7 @@ function PersonaSwitcher() {
               <button
                 type="button"
                 onClick={() => {
+                  setPersonaHash(p.persona);
                   dispatch({
                     type: "login",
                     persona: p.persona,

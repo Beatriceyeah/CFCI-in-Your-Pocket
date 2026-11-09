@@ -1,6 +1,6 @@
 import { Pill } from "../../components/Pill";
 import { DIMENSIONS } from "../../data/dimensions";
-import { computeStats } from "../../lib/analytics";
+import { computeStats, isListed } from "../../lib/analytics";
 import { useStore } from "../../store/StoreContext";
 
 const tint = (v: number | null): string =>
@@ -17,7 +17,7 @@ const tint = (v: number | null): string =>
 export function LensHeatmap() {
   const { state } = useStore();
   const rows = state.products
-    .filter((p) => p.status === "live")
+    .filter(isListed)
     .map((p) => ({ p, s: computeStats(p, state.swipes, state.evaluations) }))
     .sort((a, b) => (b.s.overall ?? 0) - (a.s.overall ?? 0));
 

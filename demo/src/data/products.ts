@@ -1,5 +1,6 @@
 import type { Product } from "../types";
 import { CFCI_STAFF } from "./users";
+import { SHOW_STUDENT_NAMES, TEAM_NAMES } from "./teamNames";
 
 const CONTACT_NOTE = "Contact Ibrahim Mohedas (ibrahim.mohedas@duke.edu) to connect with the team.";
 
@@ -56,11 +57,12 @@ const RAW_PRODUCTS: Product[] = [
   },
   {
     id: "graphene-hall",
+    ownerIds: ["u-tom"],
     name: "Graphene Hall Sensors",
     tagline: "Application-specific graphene Hall and quantum Hall modules for precision sensing",
     pitchProblem: "Researchers and robot builders can't measure magnetic fields precisely where heat, cold or size limit today's sensors.",
     pitchSolution: "Calibrated graphene Hall modules that measure fields directly at the sample, built for each application.",
-    category: "research",
+    category: "hardware",
     stage: "Early research",
     ip: "Prior-art review planned",
     summary:
@@ -95,7 +97,7 @@ const RAW_PRODUCTS: Product[] = [
       "Complete a prior-art review with Duke OTC to identify a protectable device architecture",
     ],
     team: [{ name: "Student founder 1", role: "Graduate Student" }],
-    daysSinceUpdate: 62,
+    daysSinceUpdate: 52,
     status: "live",
   },
   {
@@ -185,7 +187,7 @@ const RAW_PRODUCTS: Product[] = [
     tagline: "Immune clearance platform for neurodegeneration (listing still being drafted)",
     pitchProblem: "The team is still drafting the problem statement for this listing.",
     pitchSolution: "The team is still drafting the solution for this listing.",
-    category: "research",
+    category: "health",
     stage: "Early research",
     ip: "Invention disclosure pending",
     summary: "",
@@ -309,7 +311,7 @@ const RAW_PRODUCTS: Product[] = [
     tagline: "Thin, flexible all-carbon solar cells for the LEO satellite boom",
     pitchProblem: "Satellite makers can't get space-grade solar cells that are both light and affordable fast enough.",
     pitchSolution: "Thin, flexible all-carbon tandem solar cells that can be printed from solution.",
-    category: "research",
+    category: "hardware",
     stage: "Early research",
     ip: "Prior-art search underway",
     summary:
@@ -717,10 +719,31 @@ export const CONTACT = CONTACT_NOTE;
 
 const DAY_MS = 86_400_000;
 
-export const SEED_PRODUCTS: Product[] = RAW_PRODUCTS.map((p, i) =>
+// Sample update history: a few listings were revised recently, so Browse can show an "Updated" tag and the
+// dashboard can compare interest before and after an update.
+const UPDATED: Record<string, string> = {
+  "circadian-labs": "Added the preclinical study plan and a pilot-site conversation",
+  "clinical-sentinel": "Tightened the problem statement and added two customer interviews",
+  kinema: "New pilot results from the first clinic",
+};
+
+// Years are placeholders. The source summaries do not give them, and teams stay anonymous until they agree to be named.
+const YEARS = ["Year 1", "Year 2", "Year 3", "Year 4"];
+const withYears = (p: Product, index: number): Product => ({
+  ...p,
+  team: p.team.map((m, j) => {
+    const named = SHOW_STUDENT_NAMES ? TEAM_NAMES[p.id]?.[j] : undefined;
+    const base = named ? { ...m, name: named } : m;
+    return /Faculty|Professor/.test(m.role) ? base : { ...base, year: YEARS[(index + j) % YEARS.length] };
+  }),
+});
+
+export const SEED_PRODUCTS: Product[] = RAW_PRODUCTS.map(withYears).map((p, i) =>
   p.status === "live"
     ? {
         ...p,
+        version: UPDATED[p.id] ? 2 : 1,
+        updateNote: UPDATED[p.id],
         featuredUntil: p.id === "hf-digital-twins" ? new Date(Date.now() + 12 * DAY_MS).toISOString() : undefined,
         uploadedBy: {
           name: CFCI_STAFF[i % CFCI_STAFF.length]?.name ?? "CFCI staff",
