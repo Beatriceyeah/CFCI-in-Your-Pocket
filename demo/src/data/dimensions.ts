@@ -15,13 +15,13 @@ export const DIMENSIONS: Dimension[] = [
   {
     key: "problem",
     required: true,
-    label: "Problem",
-    prompt: "How painful and urgent is the problem?",
-    unsureLabel: "Not sure about this problem yet",
+    label: "Problem & solution",
+    prompt: "How painful is the problem, and does the solution fit it?",
+    unsureLabel: "Not sure about this yet",
     notePrompts: {
-      low: "Why is this not a real pain point?",
-      mid: "What would make this problem more urgent?",
-      high: "Why does this feel like a real pain point?",
+      low: "Why is this not a real pain point, or why would the solution miss?",
+      mid: "What would make the problem more urgent, or the solution a better fit?",
+      high: "Why does this feel like a real pain point with a solution that fits?",
     },
   },
   {

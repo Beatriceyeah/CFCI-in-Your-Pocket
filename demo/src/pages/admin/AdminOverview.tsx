@@ -8,7 +8,7 @@ type SortKey = "views" | "interest" | "score" | "comments" | "engagement";
 
 const COLUMNS: { key: SortKey; label: string }[] = [
   { key: "views", label: "Views" },
-  { key: "interest", label: "Interest rate" },
+  { key: "interest", label: "Review-later rate" },
   { key: "score", label: "Avg score" },
   { key: "comments", label: "Comments" },
   { key: "engagement", label: "Engagement" },
@@ -61,7 +61,7 @@ export function AdminOverview({ onGoPortfolio }: { onGoPortfolio: () => void }) 
   const totals = [
     { label: "External users", value: users.toString() },
     { label: "Views", value: totalViews.toString() },
-    { label: "Interest rate", value: totalShown ? pct(totalInterested / totalShown) : "–" },
+    { label: "Review-later rate", value: totalShown ? pct(totalInterested / totalShown) : "–" },
     { label: "Avg score", value: avgScore ? avgScore.toFixed(1) : "–" },
   ];
 
@@ -160,7 +160,7 @@ export function AdminOverview({ onGoPortfolio }: { onGoPortfolio: () => void }) 
           </table>
         </div>
         <p className="text-xs text-muted">
-          Views are overview opens. Interest rate is the share of shown products marked interested; for updated listings
+          Views are overview opens. Review-later rate is the share of shown products marked Review later; for updated listings
           it is also split before and after the latest update. Engagement score: a view or an interest counts 1; a rating,
           a written comment or an introduction request counts 2.
         </p>

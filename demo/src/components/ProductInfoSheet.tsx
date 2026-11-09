@@ -1,11 +1,11 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type MutableRefObject, type ReactNode } from "react";
 import { DIMENSIONS } from "../data/dimensions";
 import { isFeatured } from "../lib/order";
 import { useStore } from "../store/StoreContext";
 import type { DimensionKey, Product } from "../types";
 import { Celebration } from "./Celebration";
 import { CoverArt } from "./CoverArt";
-import { FeedbackBanner, FeedbackFinish, LensControl } from "./FeedbackSections";
+import { FeedbackFinish, LensComment } from "./FeedbackSections";
 import { Icon } from "./Icon";
 import { ProductOverview } from "./ProductOverview";
 import { Sheet } from "./Sheet";
@@ -14,56 +14,66 @@ import { useEvaluation } from "./useEvaluation";
 interface Props {
   product: Product;
   onClose: () => void;
-  footer?: ReactNode;
+  /** The bottom bar. A function gets `done`, the same action as the Done button (thank-you if anything was written). */
+  footer?: ReactNode | ((done: () => void) => ReactNode);
+  /** Takes the place of the Done button at the end of the feedback questions. Done then belongs in `footer`. */
+  introAction?: ReactNode;
   /** Ask for feedback beside each section (investors and alumni only). */
   feedback?: boolean;
   /** Scroll to the first feedback question on open. */
   focusFeedback?: boolean;
-  onShared?: () => void;
 }
 
 function FeedbackOverview({
   product,
   focus,
-  onShared,
   onClose,
+  doneRef,
+  introAction,
 }: {
   product: Product;
   focus: boolean;
-  onShared?: () => void;
   onClose: () => void;
+  doneRef: MutableRefObject<() => void>;
+  introAction?: ReactNode;
 }) {
   const { state } = useStore();
   const form = useEvaluation(product);
   const [celebrating, setCelebrating] = useState(false);
-  const helped = state.evaluations.filter((e) => !e.partial).length;
+  const helped = state.evaluations.length;
+
+  // Only an unfinished review opens a comment by itself: the first of the three core lenses that has no answer yet.
+  const autoKey = useRef(focus && form.existing?.partial ? form.missing[0]?.key : undefined);
 
   useEffect(() => {
-    if (!focus) return;
+    const key = autoKey.current;
+    if (!key) return;
     const t = window.setTimeout(
-      () => document.getElementById("dim-problem")?.scrollIntoView({ behavior: "smooth", block: "center" }),
+      () => document.getElementById(`dim-${key}`)?.scrollIntoView({ behavior: "smooth", block: "center" }),
       450,
     );
     return () => window.clearTimeout(t);
-  }, [focus]);
+  }, []);
+
+  // The Done button may live in the sheet's bottom bar, so hand its action up.
+  doneRef.current = () => (form.hasContent ? setCelebrating(true) : onClose());
 
   const lens = (key: DimensionKey) => {
     const dim = DIMENSIONS.find((d) => d.key === key);
-    return dim ? <LensControl dim={dim} form={form} flagged={false} /> : null;
+    return dim ? <LensComment dim={dim} form={form} defaultOpen={key === autoKey.current} /> : null;
   };
+
 
   return (
     <>
-      <FeedbackBanner product={product} form={form} />
       <ProductOverview product={product} lens={lens} />
-      <FeedbackFinish form={form} onSubmitted={() => setCelebrating(true)} />
+      <FeedbackFinish form={form} onDone={() => doneRef.current()} action={introAction} />
       {celebrating && (
         <Celebration
           teamName={product.name}
           helped={helped}
           onDone={() => {
             setCelebrating(false);
-            onShared?.();
             onClose();
           }}
         />
@@ -72,13 +82,25 @@ function FeedbackOverview({
   );
 }
 
-export function ProductInfoSheet({ product, onClose, footer, feedback = false, focusFeedback = false, onShared }: Props) {
+export function ProductInfoSheet({
+  product,
+  onClose,
+  footer,
+  introAction,
+  feedback = false,
+  focusFeedback = false,
+}: Props) {
   const { state } = useStore();
+  const doneRef = useRef<() => void>(() => {});
   const [playing, setPlaying] = useState(false);
   const uploaded = state.session?.persona === "admin" ? product.uploadedBy : undefined;
   const asks = feedback && state.session?.persona === "external";
   return (
-    <Sheet title={product.name} onClose={onClose} footer={footer}>
+    <Sheet
+      title={product.name}
+      onClose={onClose}
+      footer={typeof footer === "function" ? footer(() => doneRef.current()) : footer}
+    >
       <div className="relative">
         <CoverArt product={product} featured={isFeatured(product)} className="h-40 w-full" />
         <button
@@ -100,7 +122,13 @@ export function ProductInfoSheet({ product, onClose, footer, feedback = false, f
 
       <div className="flex flex-col gap-5 p-5">
         {asks ? (
-          <FeedbackOverview product={product} focus={focusFeedback} onShared={onShared} onClose={onClose} />
+          <FeedbackOverview
+            product={product}
+            focus={focusFeedback}
+            onClose={onClose}
+            doneRef={doneRef}
+            introAction={introAction}
+          />
         ) : (
           <ProductOverview product={product} />
         )}

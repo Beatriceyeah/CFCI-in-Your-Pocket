@@ -31,23 +31,23 @@ Sign-in is simulated. Once signed in, the **Demo:** pill in the header switches 
 
 | Role | What to try |
 | --- | --- |
-| **Investor or alum** | Browse ventures by swiping or as a list, and search. Tap the eye to show interest and see a thank-you in the middle of the screen. Open a venture: each section has a place to share your view right beside the data it is about (problem, market, edge, traction), and it saves as you go. Nothing is required; if you miss a lens you get a reminder before sending. Request an introduction from the card, the list or the overview. Update a take you already shared from the Shortlist. Skip everything and Browse loops back around. Customize interests under Me (optional). |
+| **Investor or alum** | Browse ventures by swiping or as a list, and search. Tap the eye (Review later) to save a venture to My reviews, or the cross (Not interested) to pass. Open a venture: each section has a place to share your view right beside the data it is about (problem, market, edge, traction), and it saves automatically, like a shared doc. Nothing is required. Request an introduction from the card, the list or the overview. Writing anything on a venture puts it in My reviews and takes it out of the feed; Review later is only for ventures you have not started on. Come back to anything under My reviews and change it. When you have seen everything, Browse says so and points you to My reviews, where you can put back anything you passed on. Customize interests under Me (optional). |
 | **Student team** | See your product's card and post an update, including a team photo and slide deck. Read feedback grouped by giver or by lens, with partly completed takes marked. See a countdown if your listing is close to being delisted. Add teammates and see who asked to connect. |
-| **CFCI staff** | Dashboard: feedback rate, written comments and an engagement score, plus views, interest rate (before and after an update) and average score per product, with a lens heatmap. Portfolio: upload a project, edit, archive or restore, remind teams, see delisted listings. Feature a venture for a set period. Review introduction requests and share a subset of products. |
+| **CFCI staff** | Dashboard: feedback rate, written comments and an engagement score, plus views, review-later rate (before and after an update) and average score per product, with a lens heatmap. Portfolio: upload a project, edit, archive or restore, remind teams, see delisted listings. Feature a venture for a set period. Review introduction requests and share a subset of products. |
 
 ## How it behaves
 
 - **Browse order** is the same for everyone: ventures CFCI is featuring (until their end date), then ventures
   matching the viewer's interests, then everything else. Within each group, the most recently updated listing
   comes first. Nothing is hidden. See `src/lib/order.ts`.
-- **Updated tag.** When a team posts an update, its card shows an "Updated" tag for a week, and viewers who already
-  looked at it see an alert at the top of Browse.
+- **Updated tag.** When a team posts an update, its card shows an "Updated" tag for a week.
 - **Delisting.** A listing not updated in 30 days gets a reminder. After 60 days it leaves Browse until the team posts an
   update, and the students see a notice on My product.
-- **Partly completed feedback** saves automatically and is already visible to the team and to staff, marked as partial.
+- **Feedback saves automatically**, like a shared doc, and is already visible to the team and to staff. It is marked
+  "partially completed" until the three core lenses have an answer.
 - **Engagement score:** a view or an interest counts 1; a rating, a written comment or an introduction request counts 2.
-- **Views** on the dashboard count overview opens. **Interest rate** is the share of shown products marked
-  interested.
+- **Views** on the dashboard count overview opens. **Review-later rate** is the share of shown products marked
+  Review later.
 - Engagement numbers (views, evaluations, interest) are generated from a fixed seed so the dashboard has
   something to show. Anything you do in the demo is added on top.
 - State is saved in your browser's `localStorage`. To start over, use **Reset demo data** on the Me tab.

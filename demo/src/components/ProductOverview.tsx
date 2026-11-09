@@ -1,8 +1,8 @@
 import type { ReactNode } from "react";
 import { STAGE_NOTE } from "../data/dimensions";
-import { teamLine, teamSummary } from "../lib/team";
 import type { DimensionKey, Product } from "../types";
-import { TeamPhoto } from "./TeamPhoto";
+import { describeMember } from "../lib/team";
+import { PersonAvatar } from "./TeamPhoto";
 
 const MARKET_LABEL: Record<string, string> = {
   TAM: "Market size (TAM)",
@@ -52,26 +52,40 @@ export function ProductOverview({
         <p className="text-base text-muted">{product.tagline}</p>
       </header>
 
-      <section className="flex items-center gap-4 rounded-2xl bg-canvas p-3" aria-label="Team">
-        <TeamPhoto product={product} className="size-20" />
-        <div className="min-w-0">
-          <p className="text-xs font-semibold uppercase tracking-wider text-royal">Built by</p>
-          <p className="font-display text-lg font-semibold leading-tight text-navy">{teamSummary(product)}</p>
-          <ul className="mt-0.5 text-[0.85rem] leading-snug text-muted">
-            {product.team.map((t) => (
-              <li key={t.name}>{teamLine(t)}</li>
-            ))}
-          </ul>
-        </div>
-      </section>
+      <ul className="flex flex-col gap-2" aria-label="Team">
+        {product.team.map((m, i) => {
+          // Program is always shown. Most sample summaries do not list it yet, so it reads "Not listed yet" until
+          // the team supplies it.
+          const facts = describeMember(m);
+          const rows: [string, string][] = facts.some(([k]) => k === "Program")
+            ? facts
+            : [...facts.filter(([k]) => k !== "School"), ["Program", ""], ...facts.filter(([k]) => k === "School")];
+          return (
+            <li key={m.name} className="flex items-start gap-3.5 rounded-2xl bg-canvas p-3">
+              <PersonAvatar member={m} index={i} className="size-16" />
+              <div className="min-w-0 flex-1">
+                <p className="font-display text-xl font-semibold leading-tight text-navy">{m.name}</p>
+                <dl className="mt-1 grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-[0.88rem] leading-snug">
+                  {rows.map(([k, v]) => (
+                    <div key={k} className="contents">
+                      <dt className="text-muted">{k}</dt>
+                      <dd className={v ? "font-medium" : "text-muted"}>{v || "Not listed yet"}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
 
       <Block title="The problem">
         <p className="text-[0.95rem] leading-snug">{product.pitchProblem}</p>
       </Block>
-      {at("problem")}
       <Block title="The solution">
         <p className="text-[0.95rem] leading-snug">{product.pitchSolution}</p>
       </Block>
+      {at("problem")}
 
       <section className="grid grid-cols-2 gap-2" aria-label="Snapshot">
         <div className="rounded-xl bg-canvas p-3">

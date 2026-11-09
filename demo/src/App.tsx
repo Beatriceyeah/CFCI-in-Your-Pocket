@@ -6,7 +6,7 @@ import { AdminOverview } from "./pages/admin/AdminOverview";
 import { AdminPortfolio } from "./pages/admin/AdminPortfolio";
 import { AdminShare } from "./pages/admin/AdminShare";
 import { BrowsePage } from "./pages/external/BrowsePage";
-import { ShortlistPage } from "./pages/external/ShortlistPage";
+import { MyReviewsPage } from "./pages/external/MyReviewsPage";
 import { LoginPage } from "./pages/LoginPage";
 import { MePage } from "./pages/MePage";
 import { TeamFeedbackPage } from "./pages/team/TeamFeedbackPage";
@@ -39,7 +39,8 @@ export function App() {
 
   const active = tabs[persona] ?? FIRST_TAB[persona];
   const go = (key: string) => setTabs((t) => ({ ...t, [persona]: key }));
-  const toEvaluate = Object.values(state.swipes).filter(
+  // Saved to review later, with no feedback started yet.
+  const toReview = Object.values(state.swipes).filter(
     (s) => s.direction === "right" && !state.evaluations.some((e) => e.productId === s.productId),
   ).length;
   const teamProduct = ownedProduct(state);
@@ -53,7 +54,7 @@ export function App() {
   const NAV: Record<Persona, NavItem[]> = {
     external: [
       { key: "browse", label: "Browse", icon: "browse" },
-      { key: "shortlist", label: "Shortlist", icon: "list", badge: toEvaluate },
+      { key: "reviews", label: "My reviews", icon: "list", badge: toReview },
       { key: "me", label: "Me", icon: "user" },
     ],
     team: [
@@ -73,7 +74,7 @@ export function App() {
   let page;
   if (persona === "external") {
     page =
-      active === "shortlist" ? <ShortlistPage /> : active === "me" ? <MePage /> : <BrowsePage onGoShortlist={() => go("shortlist")} />;
+      active === "reviews" ? <MyReviewsPage /> : active === "me" ? <MePage /> : <BrowsePage onGoReviews={() => go("reviews")} />;
   } else if (persona === "team") {
     page =
       active === "feedback" ? (

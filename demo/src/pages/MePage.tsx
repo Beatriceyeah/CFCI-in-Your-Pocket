@@ -37,7 +37,7 @@ export function MePage() {
           {session.persona === "external" && (
             <div>
               <dt className="text-xs font-semibold uppercase tracking-wider text-muted">Teams helped</dt>
-              <dd className="font-medium">{state.evaluations.filter((e) => !e.partial).length}</dd>
+              <dd className="font-medium">{state.evaluations.length}</dd>
             </div>
           )}
         </dl>

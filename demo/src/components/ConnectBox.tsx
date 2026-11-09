@@ -4,15 +4,17 @@ import type { Product } from "../types";
 import { Icon } from "./Icon";
 import { Sheet } from "./Sheet";
 
-/** Small icon-and-label button used beside Skip and Interested. */
+/** Small icon-and-label button used beside Not interested and Review later. */
 export function IntroButton({
   product,
   onOpen,
   compact = false,
+  label = "Request an introduction",
 }: {
   product: Product;
   onOpen: () => void;
   compact?: boolean;
+  label?: string;
 }) {
   const { state } = useStore();
   const sent = state.connections.some((c) => c.productId === product.id && c.fromEmail === state.session?.email);
@@ -34,12 +36,12 @@ export function IntroButton({
     <button
       type="button"
       onClick={onOpen}
-      className={`flex flex-1 items-center justify-center gap-1.5 rounded-full px-2 py-2.5 text-sm font-semibold ring-1 ring-inset ${
+      className={`flex flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-full px-2 py-2.5 text-sm font-semibold ring-1 ring-inset ${
         sent ? "bg-interest/15 text-interest-deep ring-interest/40" : "text-royal ring-royal"
       }`}
     >
       <Icon name={sent ? "check" : "mail"} className="size-4" />
-      {sent ? "Intro requested" : "Request an introduction"}
+      {sent ? "Intro requested" : label}
     </button>
   );
 }

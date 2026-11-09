@@ -28,3 +28,34 @@ export function teamSummary(p: Product): string {
     : "";
   return [`Student team of ${s.length || p.team.length}`, span].filter(Boolean).join(" · ");
 }
+
+const TEAM_ROLE = /founder|team member|member|advisor|lead|officer/i;
+const FACULTY = /faculty|professor/i;
+const DEGREE = /phd|master|meng|graduate|candidate|student|undergrad/i;
+
+/**
+ * Splits a person's free-text description into labeled facts. "PhD" or "Master's Student" is a degree, like a
+ * year, so it is never shown as a role. A role is what they do on the team: Co-founder, Team member, Faculty.
+ */
+export function describeMember(m: TeamMember): [string, string][] {
+  let role = "";
+  let degree = "";
+  const program: string[] = [];
+  let school = "";
+  for (const part of m.role.split(",").map((x) => x.trim()).filter(Boolean)) {
+    if (FACULTY.test(part)) role = role || part;
+    else if (TEAM_ROLE.test(part)) role = role || part;
+    else if (DEGREE.test(part)) degree = degree || part;
+    else if (/university/i.test(part)) school = part;
+    else program.push(part);
+  }
+  const year = m.year ? (/^year/i.test(m.year) ? m.year : `Year ${m.year}`) : "";
+  const out: [string, string][] = [];
+  if (role) out.push(["Role", role]);
+  // Degree and year are both where someone is in their studies, so they share a line.
+  const stage = [degree, year].filter(Boolean).join(" · ");
+  if (stage) out.push(["Degree", stage]);
+  if (program.length) out.push(["Program", program.join(", ")]);
+  if (school) out.push(["School", school]);
+  return out;
+}

@@ -23,7 +23,7 @@ const PERSONAS: {
     persona: "external",
     provider: "linkedin",
     label: "Investor or alum",
-    caption: "Browse, shortlist, evaluate",
+    caption: "Browse, review later, give feedback",
   },
   {
     persona: "team",

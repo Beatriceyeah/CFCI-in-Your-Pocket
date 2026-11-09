@@ -160,7 +160,7 @@ export function TeamProductPage({ editNote, clearEditNote }: Props) {
           <div className="grid grid-cols-3 gap-2 text-center">
             {[
               { v: stats.views, l: "Views" },
-              { v: stats.interested, l: "Interested" },
+              { v: stats.interested, l: "Review later" },
               { v: stats.evaluations.length, l: "Evaluations" },
             ].map((s) => (
               <div

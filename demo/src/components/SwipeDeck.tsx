@@ -3,6 +3,7 @@ import {
   useEffect,
   useRef,
   useState,
+  type CSSProperties,
   type ReactNode,
 } from "react";
 import type { Product } from "../types";
@@ -21,6 +22,8 @@ interface Props {
   onIntro: (product: Product) => void;
   /** When set, replaces the action buttons for a moment. */
   notice?: ReactNode;
+  /** Set right after Undo: the card with this id flies back in from the side it left. */
+  returning?: { productId: string; direction: "left" | "right" } | null;
 }
 
 export function SwipeDeck({
@@ -32,6 +35,7 @@ export function SwipeDeck({
   updated,
   onIntro,
   notice,
+  returning,
 }: Props) {
   const [dx, setDx] = useState(0);
   const [exiting, setExiting] = useState<"left" | "right" | null>(null);
@@ -83,8 +87,14 @@ export function SwipeDeck({
         )}
         <div
           key={top.id}
-          className="absolute inset-0 cursor-grab touch-pan-y select-none active:cursor-grabbing"
+          className={`absolute inset-0 cursor-grab touch-pan-y select-none active:cursor-grabbing ${returning?.productId === top.id ? "anim-return" : ""}`}
           style={{
+            ...(returning?.productId === top.id
+              ? ({
+                  "--return-x": returning.direction === "left" ? "-600px" : "600px",
+                  "--return-r": returning.direction === "left" ? "-27deg" : "27deg",
+                } as CSSProperties)
+              : null),
             transform: `translateX(${offset}px) rotate(${rotate}deg)`,
             transition: start.current ? "none" : "transform 0.22s ease-out",
             opacity: exiting ? 0.4 : 1,
@@ -120,13 +130,13 @@ export function SwipeDeck({
             className="pointer-events-none absolute left-5 top-5 rounded-lg border-2 border-interest bg-surface/90 px-3 py-1 font-display text-lg font-bold uppercase tracking-wider text-interest-deep"
             style={{ opacity: interest, transform: "rotate(-8deg)" }}
           >
-            Interested
+            Review later
           </div>
           <div
             className="pointer-events-none absolute right-5 top-5 rounded-lg border-2 border-muted bg-surface/90 px-3 py-1 font-display text-lg font-bold uppercase tracking-wider text-muted"
             style={{ opacity: skip, transform: "rotate(8deg)" }}
           >
-            Skip
+            Not interested
           </div>
         </div>
       </div>
@@ -140,7 +150,7 @@ export function SwipeDeck({
           <button
             type="button"
             onClick={() => commit("left")}
-            aria-label="Skip"
+            aria-label="Not interested"
             className="grid size-14 place-items-center rounded-full bg-surface text-muted shadow-md ring-1 ring-line hover:text-ink"
           >
             <Icon name="close" className="size-6" />
@@ -164,7 +174,7 @@ export function SwipeDeck({
           <button
             type="button"
             onClick={() => commit("right")}
-            aria-label="Interested"
+            aria-label="Review later"
             className="grid size-14 place-items-center rounded-full bg-interest text-white shadow-md hover:brightness-95"
           >
             <Icon name="eye" className="size-6" />

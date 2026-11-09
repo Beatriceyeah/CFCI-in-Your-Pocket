@@ -6,8 +6,9 @@ import type { DimensionKey, Evaluation, Product, ReactionKey } from "../types";
 const EMPTY_REACTIONS: Record<ReactionKey, boolean> = { use: false, invest: false, intro: false };
 
 /**
- * One viewer's take on one product. Every change is saved on its own as a partially completed take, which
- * the team and CFCI can already see. Submitting marks it complete; changing it later updates it in place.
+ * One viewer's take on one product. It works like a shared doc: every change is saved on its own, the team and
+ * CFCI can already see it, and coming back later updates the same take. It counts as partially completed until
+ * the three core lenses have an answer (a score or "not sure").
  */
 export function useEvaluation(product: Product) {
   const { state, dispatch } = useStore();
@@ -22,10 +23,8 @@ export function useEvaluation(product: Product) {
   const [touched, setTouched] = useState(false);
   const id = useRef(existing?.id ?? `eval-${product.id}-${Date.now()}`);
 
-  const wasComplete = existing ? !existing.partial : false;
-
   const build = useCallback(
-    (partial: boolean): Evaluation => ({
+    (): Evaluation => ({
       id: id.current,
       productId: product.id,
       viewerLabel: session?.roleLabel ?? "Viewer",
@@ -35,7 +34,7 @@ export function useEvaluation(product: Product) {
       reactions,
       introNote: reactions.intro ? introNote.trim() : "",
       comment: comment.trim(),
-      partial: partial || undefined,
+      partial: DIMENSIONS.some((d) => d.required && ratings[d.key] === undefined && !unsure[d.key]) || undefined,
       at: new Date().toISOString(),
     }),
     [product.id, session?.roleLabel, ratings, unsure, notes, reactions, introNote, comment],
@@ -43,7 +42,7 @@ export function useEvaluation(product: Product) {
 
   useEffect(() => {
     if (!touched) return;
-    dispatch({ type: "save_evaluation", evaluation: build(!wasComplete) });
+    dispatch({ type: "save_evaluation", evaluation: build() });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [touched, ratings, unsure, notes, reactions, introNote, comment]);
 
@@ -57,7 +56,14 @@ export function useEvaluation(product: Product) {
 
   return {
     existing,
-    status: wasComplete ? ("done" as const) : touched || existing ? ("partial" as const) : ("new" as const),
+    status: touched || existing ? ("saved" as const) : ("new" as const),
+    partial: !!existing?.partial,
+    hasContent:
+      Object.keys(ratings).length > 0 ||
+      Object.values(unsure).some(Boolean) ||
+      Object.values(notes).some((t) => !!t?.trim()) ||
+      Object.values(reactions).some(Boolean) ||
+      comment.trim() !== "",
     ratings,
     unsure,
     notes,
@@ -83,7 +89,6 @@ export function useEvaluation(product: Product) {
     toggleReaction: (key: ReactionKey) => change(setReactions, (s) => ({ ...s, [key]: !s[key] })),
     setIntroNote: (v: string) => change(setIntroNote, () => v),
     setComment: (v: string) => change(setComment, () => v),
-    submit: () => dispatch({ type: "save_evaluation", evaluation: build(false) }),
   };
 }
 

@@ -1,46 +1,97 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
+import { useStore } from "../store/StoreContext";
 import { notePromptFor, RATING_WORDS, REACTIONS, type Dimension } from "../data/dimensions";
-import type { Product } from "../types";
 import { Icon } from "./Icon";
-import { Pill } from "./Pill";
 import type { EvaluationForm } from "./useEvaluation";
 
-/** Top of the sheet: sets the tone and shows where this person's take stands. */
-export function FeedbackBanner({ product, form }: { product: Product; form: EvaluationForm }) {
-  const done = form.status === "done";
-  return (
-    <section className="flex flex-col gap-1.5 rounded-2xl bg-interest/10 p-4 ring-1 ring-interest/30">
-      <div className="flex items-center justify-between gap-3">
-        <h3 className="font-display text-lg font-semibold text-interest-deep">Help the {product.name} team</h3>
-        {form.status !== "new" && <Pill tone={done ? "good" : "warn"}>{done ? "Shared" : "Partially completed"}</Pill>}
-      </div>
-      <p className="text-sm leading-snug">
-        {done
-          ? `You shared your take on ${new Date(form.existing?.at ?? Date.now()).toLocaleDateString(undefined, { month: "short", day: "numeric" })}. Change anything below and it updates automatically.`
-          : "Students are building this. Add your view beside any section as you read. It saves as you go, and you can skip what you are not sure about."}
-      </p>
-    </section>
-  );
-}
+const initialsOf = (name: string): string =>
+  name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0]?.toUpperCase())
+    .join("");
 
-/** Rating and note for one lens, shown right under the data it is about. */
-export function LensControl({ dim, form, flagged }: { dim: Dimension; form: EvaluationForm; flagged: boolean }) {
+/**
+ * A comment on one section of the product, like a comment in a shared doc. Closed, it is a small "add your take"
+ * link, or a bubble showing what you said. Open, it holds the score and a note. Nothing needs saving.
+ */
+export function LensComment({
+  dim,
+  form,
+  defaultOpen = false,
+}: {
+  dim: Dimension;
+  form: EvaluationForm;
+  defaultOpen?: boolean;
+}) {
+  const { state } = useStore();
+  const [open, setOpen] = useState(defaultOpen);
   const value = form.ratings[dim.key];
   const isUnsure = !!form.unsure[dim.key];
-  return (
-    <div
-      id={`dim-${dim.key}`}
-      className={`flex flex-col gap-2 rounded-2xl p-3 transition ${
-        flagged ? "bg-royal/10 ring-2 ring-royal" : "bg-royal/5 ring-1 ring-royal/15"
-      }`}
-    >
-      <div className="flex items-baseline justify-between gap-3">
-        <div>
-          <p className="font-display font-semibold text-navy">Your take: {dim.label}</p>
-          <p className="text-sm text-muted">{dim.prompt}</p>
-        </div>
-        <span className="shrink-0 text-sm font-medium text-royal">{value ? RATING_WORDS[value - 1] : ""}</span>
+  const note = form.notes[dim.key] ?? "";
+  const has = value !== undefined || isUnsure || note.trim() !== "";
+  const who = state.session?.name ?? "You";
+
+  if (!open && !has) {
+    return (
+      <div id={`dim-${dim.key}`}>
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="flex items-center gap-1.5 rounded-full py-1 pl-2.5 pr-3 text-[0.82rem] font-medium text-royal ring-1 ring-inset ring-royal/30 hover:bg-royal/5"
+        >
+          <Icon name="comment" className="size-3.5" />
+          Add your take on {dim.label.toLowerCase()}
+        </button>
       </div>
+    );
+  }
+
+  const avatar = (
+    <span className="grid size-6 shrink-0 place-items-center rounded-full bg-royal text-[0.65rem] font-bold text-white">
+      {initialsOf(who)}
+    </span>
+  );
+
+  if (!open) {
+    return (
+      <div id={`dim-${dim.key}`}>
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="flex w-full items-start gap-2 rounded-xl bg-surface p-2.5 text-left shadow-sm ring-1 ring-line"
+        >
+          {avatar}
+          <span className="min-w-0 flex-1 text-sm">
+            <span className="font-semibold text-navy">
+              {value ? `${value}/5 · ${RATING_WORDS[value - 1]}` : "Not sure yet"}
+            </span>
+            {note.trim() && <span className="line-clamp-2 block text-muted">{note}</span>}
+          </span>
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div id={`dim-${dim.key}`} className="anim-fade flex flex-col gap-2 rounded-xl bg-surface p-3 shadow-md ring-1 ring-royal/30">
+      <div className="flex items-center gap-2">
+        {avatar}
+        <p className="min-w-0 flex-1 text-sm">
+          <span className="font-semibold text-navy">You</span>
+          <span className="text-muted"> on {dim.label.toLowerCase()}</span>
+        </p>
+        <button
+          type="button"
+          onClick={() => setOpen(false)}
+          aria-label="Close comment"
+          className="grid size-7 place-items-center rounded-full text-muted hover:bg-canvas"
+        >
+          <Icon name="close" className="size-4" />
+        </button>
+      </div>
+      <p className="text-sm text-muted">{dim.prompt}</p>
       <div className="flex gap-1.5" role="radiogroup" aria-label={`${dim.label} score`}>
         {[1, 2, 3, 4, 5].map((n) => (
           <button
@@ -50,7 +101,7 @@ export function LensControl({ dim, form, flagged }: { dim: Dimension; form: Eval
             aria-checked={value === n}
             aria-label={`${n} of 5, ${RATING_WORDS[n - 1]}`}
             onClick={() => form.rate(dim.key, n)}
-            className={`h-10 flex-1 rounded-xl text-sm font-semibold ring-1 ring-inset transition ${
+            className={`h-10 flex-1 rounded-lg text-sm font-semibold ring-1 ring-inset transition ${
               value === n ? "bg-royal text-white ring-royal" : "bg-surface text-muted ring-line hover:ring-royal"
             }`}
           >
@@ -72,32 +123,27 @@ export function LensControl({ dim, form, flagged }: { dim: Dimension; form: Eval
         <textarea
           aria-label={`Note on ${dim.label}`}
           rows={2}
-          value={form.notes[dim.key] ?? ""}
+          value={note}
           onChange={(e) => form.setNote(dim.key, e.target.value)}
           placeholder={`${notePromptFor(dim, value)} (optional)`}
-          className="anim-fade rounded-xl border border-line bg-surface px-3 py-2 text-sm"
+          className="anim-fade rounded-lg border border-line bg-surface px-3 py-2 text-sm"
         />
       )}
     </div>
   );
 }
 
-/** The closing questions and the submit button. Nothing here is required; a missed lens only triggers a reminder. */
-export function FeedbackFinish({ form, onSubmitted }: { form: EvaluationForm; onSubmitted: () => void }) {
-  const [reminding, setReminding] = useState(false);
-  const missing = form.missing;
-
-  const goBack = () => {
-    setReminding(false);
-    const first = missing[0];
-    if (first) document.getElementById(`dim-${first.key}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
-  };
-  const submit = () => {
-    form.submit();
-    setReminding(false);
-    onSubmitted();
-  };
-
+/** The closing questions and a Done button. Nothing here is required and nothing needs sending: it all saves as you go. */
+export function FeedbackFinish({
+  form,
+  onDone,
+  action,
+}: {
+  form: EvaluationForm;
+  onDone: () => void;
+  /** When given, it takes the place of the Done button (Done then lives in the sheet's bottom bar). */
+  action?: ReactNode;
+}) {
   return (
     <div className="flex flex-col gap-4 border-t border-line pt-5">
       <section className="flex flex-col gap-2">
@@ -144,30 +190,11 @@ export function FeedbackFinish({ form, onSubmitted }: { form: EvaluationForm; on
         />
       </label>
 
-      {reminding && missing.length > 0 && (
-        <div role="alert" className="anim-fade flex flex-col gap-2 rounded-2xl bg-warn-soft p-4 text-sm text-warn">
-          <p className="font-semibold">
-            You have not answered {missing.map((d) => d.label).join(" or ")} yet.
-          </p>
-          <p>You can still send what you have. Students find even partial feedback useful.</p>
-          <div className="flex gap-2">
-            <button type="button" onClick={goBack} className="rounded-full bg-surface px-4 py-2 font-semibold text-navy ring-1 ring-line">
-              Go back to answer
-            </button>
-            <button type="button" onClick={submit} className="rounded-full bg-navy px-4 py-2 font-semibold text-white">
-              Send anyway
-            </button>
-          </div>
-        </div>
-      )}
-
-      {!reminding && (
-        <button
-          type="button"
-          onClick={() => (missing.length ? setReminding(true) : submit())}
-          className="rounded-full bg-navy py-3 font-semibold text-white"
-        >
-          {form.status === "done" ? "Save my update" : "Send my take to the team"}
+      {action ? (
+        <div className="flex [&>button]:py-3">{action}</div>
+      ) : (
+        <button type="button" onClick={onDone} className="rounded-full bg-navy py-3 font-semibold text-white">
+          Done
         </button>
       )}
     </div>

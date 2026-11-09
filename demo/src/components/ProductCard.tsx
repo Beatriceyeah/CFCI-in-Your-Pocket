@@ -1,4 +1,4 @@
-import { teamDetail } from "../lib/team";
+import { describeMember } from "../lib/team";
 import type { Product } from "../types";
 import { Icon } from "./Icon";
 import { PersonAvatar } from "./TeamPhoto";
@@ -53,7 +53,7 @@ export function ProductCard({
                   {m.name}
                 </p>
                 <p className="line-clamp-2 text-[0.85rem] leading-snug text-muted">
-                  {[teamDetail(m.role), m.year].filter(Boolean).join(" · ")}
+                  {describeMember(m).map(([, v]) => v).join(" · ")}
                 </p>
               </div>
             </li>

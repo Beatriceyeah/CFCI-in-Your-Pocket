@@ -13,12 +13,12 @@ import { useStore } from "../../store/StoreContext";
 import type { Product } from "../../types";
 
 interface Props {
-  onGoShortlist: () => void;
+  onGoReviews: () => void;
 }
 
 type ToastState = { kind: "saved" | "skipped"; product: Product } | null;
 
-export function BrowsePage({ onGoShortlist }: Props) {
+export function BrowsePage({ onGoReviews }: Props) {
   const { state, dispatch } = useStore();
   // Interests are set in My info. They only move ventures up the ranking.
   const interests = state.directions;
@@ -28,8 +28,10 @@ export function BrowsePage({ onGoShortlist }: Props) {
   const [intro, setIntro] = useState<Product | null>(null);
   const [toast, setToast] = useState<ToastState>(null);
   const [skipTagged, setSkipTagged] = useState(false);
+  const [reasonsOpen, setReasonsOpen] = useState(false);
+  const [returning, setReturning] = useState<{ productId: string; direction: "left" | "right" } | null>(null);
 
-  const { queue, looped } = useMemo(() => {
+  const queue = useMemo(() => {
     const q = query.trim().toLowerCase();
     const matches = (p: Product): boolean =>
       !q ||
@@ -37,18 +39,11 @@ export function BrowsePage({ onGoShortlist }: Props) {
         .join(" ")
         .toLowerCase()
         .includes(q);
-    const listed = state.products.filter((p) => isListed(p) && matches(p));
-    const unseen = listed.filter((p) => !state.swipes[p.id]);
-    if (unseen.length) return { queue: rankProducts(unseen, interests), looped: false };
-    // Everything has been seen once: loop back around instead of ending. Skipped ventures come first, oldest
-    // first, and each pass moves a venture to the back of the line.
-    const swiped = listed.filter((p) => state.swipes[p.id]);
-    const skipped = swiped.filter((p) => state.swipes[p.id]?.direction === "left");
-    const pool = (skipped.length ? skipped : swiped).sort((a, b) =>
-      (state.swipes[a.id]?.at ?? "").localeCompare(state.swipes[b.id]?.at ?? ""),
-    );
-    return { queue: pool, looped: pool.length > 0 };
-  }, [state.products, state.swipes, interests, query]);
+    // A venture leaves the feed once there is a decision on it, or once you have written anything about it.
+    const reviewed = new Set(state.evaluations.map((e) => e.productId));
+    const unseen = state.products.filter((p) => isListed(p) && !state.swipes[p.id] && !reviewed.has(p.id) && matches(p));
+    return rankProducts(unseen, interests);
+  }, [state.products, state.swipes, state.evaluations, interests, query]);
 
   const featured: ReadonlySet<string> = useMemo(
     () => new Set(queue.filter((p) => isFeatured(p)).map((p) => p.id)),
@@ -59,20 +54,13 @@ export function BrowsePage({ onGoShortlist }: Props) {
     [queue],
   );
 
-  // Ventures this viewer already looked at that have changed since.
-  const news = useMemo(
-    () =>
-      state.products.filter(
-        (p) => isListed(p) && state.seen[p.id] !== undefined && state.seen[p.id]! < (p.version ?? 1),
-      ),
-    [state.products, state.seen],
-  );
-
   const swipe = useCallback(
     (product: Product, direction: "left" | "right") => {
       dispatch({ type: "swipe", productId: product.id, direction });
+      setReturning(null);
       setOpen(null);
       setSkipTagged(false);
+      setReasonsOpen(false);
       setToast({ kind: direction === "right" ? "saved" : "skipped", product });
     },
     [dispatch],
@@ -86,39 +74,80 @@ export function BrowsePage({ onGoShortlist }: Props) {
   const dismiss = useCallback(() => setToast(null), []);
 
   const undo = (product: Product) => {
+    // The card flies back in from the side it was swiped to (left = skipped, right = review later).
+    setReturning({ productId: product.id, direction: toast?.kind === "skipped" ? "left" : "right" });
+    window.setTimeout(() => setReturning(null), 500);
     dispatch({ type: "undo_swipe", productId: product.id });
     setToast(null);
   };
 
-  // Skipped: a single-row strip in place of the action buttons, so it never covers the card.
-  const notice =
+  // Both outcomes float at the top in the same style. Not interested only says "Why?" until it is tapped.
+  const floatNote =
     toast?.kind === "skipped" ? (
-      <Toast onDismiss={dismiss}>
+      <Toast onDismiss={dismiss} seconds={skipTagged ? 2 : reasonsOpen ? 12 : 6}>
         {skipTagged ? (
-          <p className="flex-1">Thanks, noted.</p>
+          <p className="pr-8 font-semibold">Thanks, noted.</p>
         ) : (
           <>
-            <span className="shrink-0 text-white/80">Why skip?</span>
-            <div className="flex min-w-0 flex-1 gap-1.5 overflow-x-auto">
-              {SKIP_REASONS.map((r) => (
-                <button
-                  key={r.key}
-                  type="button"
-                  className="shrink-0 rounded-full bg-white/15 px-3 py-1 text-sm hover:bg-white/25"
-                  onClick={() => {
-                    dispatch({ type: "tag_skip", productId: toast.product.id, reason: r.key });
-                    setSkipTagged(true);
-                  }}
-                >
-                  {r.label}
-                </button>
-              ))}
+            <p className="min-w-0 pr-7 leading-snug">
+              <span className="text-base font-semibold">{toast.product.name}</span>{" "}
+              <span className="text-sm text-white/70">skipped</span>
+            </p>
+            <div className="flex items-center gap-4">
+              <button
+                type="button"
+                aria-expanded={reasonsOpen}
+                onClick={() => setReasonsOpen((o) => !o)}
+                className="flex items-center gap-1.5 rounded-full bg-white px-3.5 py-1.5 font-semibold text-navy"
+              >
+                Pick a reason
+                <span className={`inline-block text-xs transition-transform ${reasonsOpen ? "rotate-180" : ""}`}>▾</span>
+              </button>
+              <button type="button" className="text-white/75 underline underline-offset-2" onClick={() => undo(toast.product)}>
+                Undo
+              </button>
             </div>
-            <button type="button" className="shrink-0 px-1 text-white/70" onClick={() => undo(toast.product)}>
-              Undo
-            </button>
+            {reasonsOpen && (
+              <div className="anim-fade flex flex-wrap gap-1.5">
+                {SKIP_REASONS.map((r) => (
+                  <button
+                    key={r.key}
+                    type="button"
+                    className="rounded-full bg-white/15 px-3 py-1.5 hover:bg-white/25"
+                    onClick={() => {
+                      dispatch({ type: "tag_skip", productId: toast.product.id, reason: r.key });
+                      setSkipTagged(true);
+                    }}
+                  >
+                    {r.label}
+                  </button>
+                ))}
+              </div>
+            )}
           </>
         )}
+      </Toast>
+    ) : toast?.kind === "saved" ? (
+      <Toast onDismiss={dismiss} seconds={6}>
+        <p className="min-w-0 pr-7 leading-snug">
+          <span className="text-base font-semibold">{toast.product.name}</span>{" "}
+          <span className="text-sm text-white/70">added to My reviews</span>
+        </p>
+        <div className="flex items-center gap-4">
+          <button
+            type="button"
+            className="rounded-full bg-white px-3.5 py-1.5 font-semibold text-navy"
+            onClick={() => {
+              setToast(null);
+              onGoReviews();
+            }}
+          >
+            Review now
+          </button>
+          <button type="button" className="text-white/75 underline underline-offset-2" onClick={() => undo(toast.product)}>
+            Undo
+          </button>
+        </div>
       </Toast>
     ) : null;
 
@@ -127,7 +156,7 @@ export function BrowsePage({ onGoShortlist }: Props) {
       <button
         type="button"
         onClick={() => swipe(p, "left")}
-        aria-label={`Skip ${p.name}`}
+        aria-label={`Not interested in ${p.name}`}
         className="grid size-10 place-items-center rounded-full bg-surface text-muted ring-1 ring-line"
       >
         <Icon name="close" className="size-5" />
@@ -136,7 +165,7 @@ export function BrowsePage({ onGoShortlist }: Props) {
       <button
         type="button"
         onClick={() => swipe(p, "right")}
-        aria-label={`Interested in ${p.name}`}
+        aria-label={`Review ${p.name} later`}
         className="grid size-10 place-items-center rounded-full bg-interest text-white"
       >
         <Icon name="eye" className="size-5" />
@@ -146,6 +175,12 @@ export function BrowsePage({ onGoShortlist }: Props) {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-3">
+      {floatNote && (
+        // Zero-height sticky anchor, so the note floats over the page instead of pushing the card down.
+        <div className="sticky top-0 z-30 -mb-3 h-0">
+          <div className="absolute inset-x-0 top-0 flex justify-center">{floatNote}</div>
+        </div>
+      )}
       <div className="flex items-center gap-2">
         <label className="relative block min-w-0 flex-1" htmlFor="browse-search">
           <span className="sr-only">Search products</span>
@@ -180,31 +215,6 @@ export function BrowsePage({ onGoShortlist }: Props) {
           ))}
         </div>
       </div>
-
-      {news.length > 0 && (
-        <button
-          type="button"
-          onClick={() => openProduct(news[0]!)}
-          className="anim-fade flex items-center gap-3 rounded-2xl bg-interest/10 px-4 py-2 text-left ring-1 ring-interest/30"
-        >
-          <span className="grid size-7 shrink-0 place-items-center rounded-full bg-interest text-white">
-            <Icon name="refresh" className="size-4" />
-          </span>
-          <span className="min-w-0 flex-1 text-sm leading-snug">
-            <span className="font-semibold text-interest-deep">
-              {news.length === 1 ? `${news[0]!.name} has an update` : `${news.length} ventures you looked at have updates`}
-            </span>
-            <span className="block truncate text-muted">{news[0]!.updateNote ?? "The team posted new progress."}</span>
-          </span>
-        </button>
-      )}
-
-      {looped && (
-        <p className="anim-fade rounded-2xl bg-canvas px-4 py-2.5 text-sm text-muted ring-1 ring-line">
-          <span className="font-semibold text-navy">You have been around once.</span> Here they come again. A second look
-          can change your mind, and the teams may have updated.
-        </p>
-      )}
 
       {queue.length && view === "list" ? (
         <ul className="flex flex-col gap-2 pb-2">
@@ -243,17 +253,17 @@ export function BrowsePage({ onGoShortlist }: Props) {
           paused={!!open || !!intro}
           featured={featured}
           updated={updated}
-          notice={view === "swipe" ? notice : null}
+          returning={returning}
         />
       ) : (
         <div className="flex flex-1 flex-col items-center justify-center gap-3 rounded-card bg-surface p-8 text-center ring-1 ring-line">
           <h2 className="font-display text-xl font-bold text-navy">
-            {query.trim() ? "No products match" : "New ventures are on the way"}
+            {query.trim() ? "No products match" : "You have seen everything here"}
           </h2>
           <p className="max-w-xs text-muted">
             {query.trim()
               ? "Try a different word."
-              : "CFCI adds ventures as teams are ready. Check your shortlist while you wait."}
+              : "Pick up anything you saved in My reviews, or put back a venture you passed on."}
           </p>
           <div className="flex gap-2">
             {query.trim() && (
@@ -265,40 +275,11 @@ export function BrowsePage({ onGoShortlist }: Props) {
                 Clear search
               </button>
             )}
-            <button type="button" onClick={onGoShortlist} className="rounded-full bg-navy px-4 py-2 font-medium text-white">
-              Open shortlist
+            <button type="button" onClick={onGoReviews} className="rounded-full bg-navy px-4 py-2 font-medium text-white">
+              Open My reviews
             </button>
           </div>
         </div>
-      )}
-
-      {notice && view === "list" && (
-        <div className="fixed inset-x-0 bottom-20 z-30 flex justify-center px-4">{notice}</div>
-      )}
-
-      {toast?.kind === "saved" && (
-        <Toast center seconds={4} onDismiss={dismiss}>
-          <span className="grid size-12 place-items-center rounded-full bg-interest">
-            <Icon name="check" className="size-7" />
-          </span>
-          <p className="font-display text-xl font-semibold">Added to your shortlist</p>
-          <p className="text-sm text-white/75">{toast.product.name}</p>
-          <div className="flex gap-2">
-            <button
-              type="button"
-              className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-navy"
-              onClick={() => {
-                openProduct(toast.product, true);
-                setToast(null);
-              }}
-            >
-              Help this team
-            </button>
-            <button type="button" className="px-3 py-2 text-sm text-white/75" onClick={() => undo(toast.product)}>
-              Undo
-            </button>
-          </div>
-        </Toast>
       )}
 
       {open && (
@@ -307,26 +288,37 @@ export function BrowsePage({ onGoShortlist }: Props) {
           feedback
           focusFeedback={open.focus}
           onClose={() => setOpen(null)}
-          footer={
+          introAction={<IntroButton product={open.product} onOpen={() => setIntro(open.product)} />}
+          footer={(done) => (
             <div className="flex gap-2">
               <button
                 type="button"
                 onClick={() => swipe(open.product, "left")}
-                className="rounded-full px-5 py-2.5 font-semibold text-ink ring-1 ring-line"
+                className="flex-1 whitespace-nowrap rounded-full px-2 py-2.5 text-sm font-semibold text-ink ring-1 ring-line"
               >
-                Skip
+                Not interested
               </button>
-              <IntroButton product={open.product} onOpen={() => setIntro(open.product)} />
-              <button
-                type="button"
-                onClick={() => swipe(open.product, "right")}
-                className="flex items-center gap-1.5 rounded-full bg-interest px-5 py-2.5 font-semibold text-white"
-              >
-                <Icon name="eye" className="size-4" />
-                Interested
-              </button>
+              {state.evaluations.some((e) => e.productId === open.product.id) ? (
+                // Once you have written something the venture is already in My reviews, so this is where you finish.
+                <button
+                  type="button"
+                  onClick={done}
+                  className="flex-1 whitespace-nowrap rounded-full bg-navy px-2 py-2.5 text-sm font-semibold text-white"
+                >
+                  Done
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => swipe(open.product, "right")}
+                  className="flex flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-full bg-interest px-2 py-2.5 text-sm font-semibold text-white"
+                >
+                  <Icon name="eye" className="size-4" />
+                  Review later
+                </button>
+              )}
             </div>
-          }
+          )}
         />
       )}
       {intro && <IntroSheet product={intro} onClose={() => setIntro(null)} />}

@@ -1,39 +1,56 @@
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
+import { Icon } from "./Icon";
 
-// One compact row. By default it sits wherever the caller puts it; `center` floats it mid-screen so it is never missed.
+const FADE_MS = 400;
+
+/**
+ * A small note that floats over the top of the page: it fades out by itself, shows a countdown bar, and can be
+ * closed. Callers place it; `seconds` can be raised while the person is still interacting with it.
+ */
 export function Toast({
   onDismiss,
   children,
-  center = false,
-  seconds = 7,
+  seconds = 6,
 }: {
   onDismiss: () => void;
   children: ReactNode;
-  center?: boolean;
   seconds?: number;
 }) {
+  const [leaving, setLeaving] = useState(false);
+
   useEffect(() => {
-    const t = window.setTimeout(onDismiss, seconds * 1000);
-    return () => window.clearTimeout(t);
+    setLeaving(false);
+    const fade = window.setTimeout(() => setLeaving(true), Math.max(0, seconds * 1000 - FADE_MS));
+    const end = window.setTimeout(onDismiss, seconds * 1000);
+    return () => {
+      window.clearTimeout(fade);
+      window.clearTimeout(end);
+    };
   }, [onDismiss, seconds]);
-  if (center) {
-    return (
-      <div className="pointer-events-none fixed inset-0 z-50 grid place-items-center px-6">
-        <div
-          role="status"
-          className="anim-fade pointer-events-auto flex w-full max-w-xs flex-col items-center gap-3 rounded-3xl bg-navy p-6 text-center text-white shadow-2xl"
-        >
-          {children}
-        </div>
-      </div>
-    );
-  }
+
   return (
     <div
       role="status"
-      className="anim-fade flex min-h-14 w-full max-w-md items-center gap-3 rounded-full bg-navy px-5 py-2 text-sm text-white shadow-xl"
+      style={{ transition: `opacity ${FADE_MS}ms ease-out, transform ${FADE_MS}ms ease-out` }}
+      className={`anim-fade relative flex w-[22rem] max-w-full flex-col gap-2 overflow-hidden rounded-2xl bg-navy px-4 pb-4 pt-3.5 text-sm text-white shadow-xl ${
+        leaving ? "-translate-y-1 opacity-0" : "opacity-100"
+      }`}
     >
+      <button
+        type="button"
+        onClick={onDismiss}
+        aria-label="Close"
+        className="absolute right-2 top-2 grid size-7 place-items-center rounded-full text-white/70 hover:bg-white/10 hover:text-white"
+      >
+        <Icon name="close" className="size-4" />
+      </button>
       {children}
+      <span
+        key={seconds}
+        className="toast-countdown absolute inset-x-0 bottom-0 h-1 origin-left bg-interest"
+        style={{ animationDuration: `${seconds}s` }}
+        aria-hidden="true"
+      />
     </div>
   );
 }

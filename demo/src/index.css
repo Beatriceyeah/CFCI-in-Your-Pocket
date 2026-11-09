@@ -88,7 +88,28 @@ body {
   animation: fade-up 0.25s ease-out;
 }
 
+/* Undo: the card flies back in from the side it was swiped to, with a small overshoot. */
+@keyframes card-return {
+  from {
+    transform: translateX(var(--return-x)) rotate(var(--return-r));
+    opacity: 0.3;
+  }
+  70% {
+    transform: translateX(calc(var(--return-x) * -0.03)) rotate(calc(var(--return-r) * -0.1));
+    opacity: 1;
+  }
+  to {
+    transform: translateX(0) rotate(0deg);
+    opacity: 1;
+  }
+}
+
+.anim-return {
+  animation: card-return 0.42s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .anim-return,
   .anim-sheet,
   .anim-backdrop,
   .anim-backdrop-out,
@@ -130,4 +151,19 @@ body {
   .confetti {
     display: none;
   }
+}
+
+@keyframes toast-countdown {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}
+
+.toast-countdown {
+  animation-name: toast-countdown;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
 }
