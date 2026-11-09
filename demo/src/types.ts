@@ -14,6 +14,11 @@ export interface MarketStat {
   note: string;
 }
 
+export interface UpdateSummary {
+  headline: string;
+  points: string[];
+}
+
 export interface TeamMember {
   name: string;
   role: string;
@@ -44,6 +49,8 @@ export interface Product {
   /** Bumps each time the team posts an update; version 1 is the original listing. */
   version?: number;
   updateNote?: string;
+  /** What changed in the latest update, written for investors who saw an earlier version. */
+  updateSummary?: UpdateSummary;
   /** Data URL of the team photo, or empty until the team uploads one. */
   teamPhoto?: string;
   deckName?: string;
@@ -90,6 +97,8 @@ export interface SwipeRecord {
   /** The product version the viewer saw, so interest can be compared before and after an update. */
   version?: number;
   at: string;
+  /** What this swipe replaced, so Undo can put the venture back where it was (a venture that came round again). */
+  prev?: { swipe: Omit<SwipeRecord, "prev">; seen?: number };
 }
 
 export interface Evaluation {
@@ -105,6 +114,15 @@ export interface Evaluation {
   comment: string;
   /** Saved automatically but not submitted yet. Teams and CFCI still see it, marked as partial. */
   partial?: boolean;
+  /** The product version this take was written against. Older than the product means the team has updated since. */
+  version?: number;
+  /** The viewer's scores from the version before, kept so they can see them next to the new ones. */
+  last?: {
+    version: number;
+    ratings: Partial<Record<DimensionKey, number>>;
+    unsure: Partial<Record<DimensionKey, boolean>>;
+    notes: Partial<Record<DimensionKey, string>>;
+  };
   at: string;
 }
 

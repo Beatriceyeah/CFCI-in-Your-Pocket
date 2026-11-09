@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { STAGE_NOTE } from "../data/dimensions";
 import type { DimensionKey, Product } from "../types";
+import { freshnessLabel } from "../lib/analytics";
 import { describeMember } from "../lib/team";
 import { PersonAvatar } from "./TeamPhoto";
 
@@ -50,6 +51,13 @@ export function ProductOverview({
       <header className="flex flex-col gap-1">
         <h3 className="font-display text-2xl font-bold leading-tight text-navy">{product.name}</h3>
         <p className="text-base text-muted">{product.tagline}</p>
+        <p className="text-xs font-semibold text-royal">
+          Version {product.version ?? 1}
+          <span className="font-medium text-muted">
+            {" "}
+            · {(product.version ?? 1) > 1 ? freshnessLabel(product.daysSinceUpdate) : "Original listing"}
+          </span>
+        </p>
       </header>
 
       <ul className="flex flex-col gap-2" aria-label="Team">

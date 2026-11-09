@@ -167,3 +167,48 @@ body {
   animation-timing-function: linear;
   animation-fill-mode: forwards;
 }
+
+/* The product card sizes itself to the height it is given: the shorter it is, the less it shows. */
+.product-card {
+  container-type: size;
+  scrollbar-width: none;
+}
+
+@container (max-height: 500px) {
+  .pc-line-text {
+    -webkit-line-clamp: 2;
+  }
+}
+
+@container (max-height: 440px) {
+  /* A single builder has room for more lines than a team of two or three. */
+  .pc-member-detail:not(.pc-single) {
+    -webkit-line-clamp: 1;
+  }
+  .pc-team {
+    gap: 0.5rem;
+  }
+  .pc-name {
+    font-size: 1.05rem;
+  }
+}
+
+/* Very short: one line per pitch, a smaller title and no status line. If even that does not fit, the card scrolls. */
+@container (max-height: 390px) {
+  .pc-top {
+    min-height: min-content;
+  }
+  .pc-line-text,
+  .pc-member-detail {
+    -webkit-line-clamp: 1;
+  }
+  .pc-title {
+    font-size: 1.25rem;
+  }
+  .pc-status {
+    display: none;
+  }
+  .pc-team {
+    gap: 0.375rem;
+  }
+}

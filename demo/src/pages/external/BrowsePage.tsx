@@ -6,8 +6,10 @@ import { ProductInfoSheet } from "../../components/ProductInfoSheet";
 import { SwipeDeck } from "../../components/SwipeDeck";
 import { Toast } from "../../components/Toast";
 import { SKIP_REASONS } from "../../data/dimensions";
-import { isListed, wasUpdatedRecently } from "../../lib/analytics";
-import { isFeatured, rankProducts } from "../../lib/order";
+import { wasUpdatedRecently } from "../../lib/analytics";
+import { buildFeed } from "../../lib/feed";
+import { updatedPassedForViewer } from "../../lib/updates";
+import { isFeatured } from "../../lib/order";
 import { teamSummary } from "../../lib/team";
 import { useStore } from "../../store/StoreContext";
 import type { Product } from "../../types";
@@ -16,7 +18,8 @@ interface Props {
   onGoReviews: () => void;
 }
 
-type ToastState = { kind: "saved" | "skipped"; product: Product } | null;
+// `id` is new for every swipe, so each pop-up starts with its own countdown instead of inheriting the last one's.
+type ToastState = { id: number; kind: "saved" | "skipped"; product: Product } | null;
 
 export function BrowsePage({ onGoReviews }: Props) {
   const { state, dispatch } = useStore();
@@ -39,11 +42,33 @@ export function BrowsePage({ onGoReviews }: Props) {
         .join(" ")
         .toLowerCase()
         .includes(q);
-    // A venture leaves the feed once there is a decision on it, or once you have written anything about it.
-    const reviewed = new Set(state.evaluations.map((e) => e.productId));
-    const unseen = state.products.filter((p) => isListed(p) && !state.swipes[p.id] && !reviewed.has(p.id) && matches(p));
-    return rankProducts(unseen, interests);
-  }, [state.products, state.swipes, state.evaluations, interests, query]);
+    // Featured, then updated, then new, then the ones you passed on coming round again. See lib/feed.ts.
+    return buildFeed({
+      products: state.products,
+      swipes: state.swipes,
+      evaluations: state.evaluations,
+      seen: state.seen,
+      interests,
+      matches,
+    });
+  }, [state.products, state.swipes, state.evaluations, state.seen, interests, query]);
+
+  // Ventures you passed on come round again. Say so, otherwise a card you just skipped reappearing looks like a bug.
+  const passedIds = useMemo(
+    () => new Set(Object.values(state.swipes).filter((sw) => sw.direction === "left").map((sw) => sw.productId)),
+    [state.swipes],
+  );
+  const updatedPassedIds = useMemo(
+    () => new Set(updatedPassedForViewer(state).map((p) => p.id)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [state.products, state.swipes, state.evaluations, state.seen],
+  );
+  const topCard = queue[0];
+  const loopNotice = !topCard || !passedIds.has(topCard.id)
+    ? null
+    : updatedPassedIds.has(topCard.id)
+      ? "You passed on this one. The team has updated it since."
+      : "That's all the new ones. Here are ventures you passed on.";
 
   const featured: ReadonlySet<string> = useMemo(
     () => new Set(queue.filter((p) => isFeatured(p)).map((p) => p.id)),
@@ -61,7 +86,7 @@ export function BrowsePage({ onGoReviews }: Props) {
       setOpen(null);
       setSkipTagged(false);
       setReasonsOpen(false);
-      setToast({ kind: direction === "right" ? "saved" : "skipped", product });
+      setToast({ id: Date.now(), kind: direction === "right" ? "saved" : "skipped", product });
     },
     [dispatch],
   );
@@ -84,7 +109,7 @@ export function BrowsePage({ onGoReviews }: Props) {
   // Both outcomes float at the top in the same style. Not interested only says "Why?" until it is tapped.
   const floatNote =
     toast?.kind === "skipped" ? (
-      <Toast onDismiss={dismiss} seconds={skipTagged ? 2 : reasonsOpen ? 12 : 6}>
+      <Toast key={toast.id} onDismiss={dismiss} seconds={skipTagged ? 1.5 : reasonsOpen ? 8 : 4}>
         {skipTagged ? (
           <p className="pr-8 font-semibold">Thanks, noted.</p>
         ) : (
@@ -128,7 +153,7 @@ export function BrowsePage({ onGoReviews }: Props) {
         )}
       </Toast>
     ) : toast?.kind === "saved" ? (
-      <Toast onDismiss={dismiss} seconds={6}>
+      <Toast key={toast.id} onDismiss={dismiss} seconds={4}>
         <p className="min-w-0 pr-7 leading-snug">
           <span className="text-base font-semibold">{toast.product.name}</span>{" "}
           <span className="text-sm text-white/70">added to My reviews</span>
@@ -228,14 +253,21 @@ export function BrowsePage({ onGoReviews }: Props) {
               >
                 <CoverArt product={p} featured={featured.has(p.id)} className="size-14 shrink-0 rounded-xl" />
                 <span className="min-w-0 flex-1">
-                  <span className="flex items-center gap-1.5">
-                    <span className="truncate font-display font-semibold text-navy">{p.name}</span>
-                    {updated.has(p.id) && (
-                      <span className="shrink-0 rounded-full bg-interest/15 px-2 py-0.5 text-[0.65rem] font-bold uppercase text-interest-deep">
-                        Updated
-                      </span>
-                    )}
-                  </span>
+                  <span className="block truncate font-display font-semibold text-navy">{p.name}</span>
+                  {(updated.has(p.id) || passedIds.has(p.id)) && (
+                    <span className="mt-0.5 flex flex-wrap gap-1">
+                      {updated.has(p.id) && (
+                        <span className="whitespace-nowrap rounded-full bg-interest/15 px-2 py-0.5 text-[0.7rem] font-bold text-interest-deep">
+                          Recently updated
+                        </span>
+                      )}
+                      {passedIds.has(p.id) && (
+                        <span className="whitespace-nowrap rounded-full bg-canvas px-2 py-0.5 text-[0.7rem] font-semibold text-muted ring-1 ring-line">
+                          Passed before
+                        </span>
+                      )}
+                    </span>
+                  )}
                   <span className="line-clamp-1 block text-xs text-muted">{teamSummary(p)}</span>
                   <span className="line-clamp-2 mt-0.5 block text-sm">{p.pitchProblem}</span>
                 </span>
@@ -245,6 +277,17 @@ export function BrowsePage({ onGoReviews }: Props) {
           ))}
         </ul>
       ) : queue.length ? (
+        <>
+        {loopNotice && (
+          <p
+            key={loopNotice}
+            role="status"
+            className="anim-fade flex items-center gap-2 rounded-xl bg-royal/5 px-3 py-2 text-[0.82rem] leading-snug text-navy ring-1 ring-royal/15"
+          >
+            <Icon name="refresh" className="size-4 shrink-0 text-royal" />
+            {loopNotice}
+          </p>
+        )}
         <SwipeDeck
           products={queue}
           onSwipe={swipe}
@@ -255,6 +298,7 @@ export function BrowsePage({ onGoReviews }: Props) {
           updated={updated}
           returning={returning}
         />
+        </>
       ) : (
         <div className="flex flex-1 flex-col items-center justify-center gap-3 rounded-card bg-surface p-8 text-center ring-1 ring-line">
           <h2 className="font-display text-xl font-bold text-navy">

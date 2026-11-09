@@ -14,9 +14,17 @@ export function useEvaluation(product: Product) {
   const { state, dispatch } = useStore();
   const session = state.session;
   const existing = state.evaluations.find((e) => e.productId === product.id);
-  const [ratings, setRatings] = useState<Partial<Record<DimensionKey, number>>>(existing?.ratings ?? {});
-  const [unsure, setUnsure] = useState<Partial<Record<DimensionKey, boolean>>>(existing?.unsure ?? {});
-  const [notes, setNotes] = useState<Partial<Record<DimensionKey, string>>>(existing?.notes ?? {});
+  const productVersion = product.version ?? 1;
+  // The team has updated since this viewer last gave scores: the new scores start blank and the old ones become "last".
+  const stale = !!existing && (existing.version ?? 1) < productVersion;
+  const last = useRef(
+    stale && existing
+      ? { version: existing.version ?? 1, ratings: existing.ratings, unsure: existing.unsure ?? {}, notes: existing.notes }
+      : existing?.last,
+  );
+  const [ratings, setRatings] = useState<Partial<Record<DimensionKey, number>>>(stale ? {} : (existing?.ratings ?? {}));
+  const [unsure, setUnsure] = useState<Partial<Record<DimensionKey, boolean>>>(stale ? {} : (existing?.unsure ?? {}));
+  const [notes, setNotes] = useState<Partial<Record<DimensionKey, string>>>(stale ? {} : (existing?.notes ?? {}));
   const [reactions, setReactions] = useState(existing?.reactions ?? EMPTY_REACTIONS);
   const [introNote, setIntroNote] = useState(existing?.introNote ?? "");
   const [comment, setComment] = useState(existing?.comment ?? "");
@@ -35,9 +43,11 @@ export function useEvaluation(product: Product) {
       introNote: reactions.intro ? introNote.trim() : "",
       comment: comment.trim(),
       partial: DIMENSIONS.some((d) => d.required && ratings[d.key] === undefined && !unsure[d.key]) || undefined,
+      version: productVersion,
+      last: last.current,
       at: new Date().toISOString(),
     }),
-    [product.id, session?.roleLabel, ratings, unsure, notes, reactions, introNote, comment],
+    [product.id, productVersion, session?.roleLabel, ratings, unsure, notes, reactions, introNote, comment],
   );
 
   useEffect(() => {
@@ -58,12 +68,15 @@ export function useEvaluation(product: Product) {
     existing,
     status: touched || existing ? ("saved" as const) : ("new" as const),
     partial: !!existing?.partial,
+    /** The viewer's scores from before the team's last update, shown beside the new ones. */
+    last: last.current,
     hasContent:
-      Object.keys(ratings).length > 0 ||
+      (!stale || touched) &&
+      (Object.keys(ratings).length > 0 ||
       Object.values(unsure).some(Boolean) ||
       Object.values(notes).some((t) => !!t?.trim()) ||
       Object.values(reactions).some(Boolean) ||
-      comment.trim() !== "",
+      comment.trim() !== ""),
     ratings,
     unsure,
     notes,

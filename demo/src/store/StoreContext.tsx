@@ -7,7 +7,20 @@ const STORAGE_KEY = "cfci-pocket-demo-v9";
 function load(): State {
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (raw) return { ...initialState(), ...(JSON.parse(raw) as Partial<State>) };
+    if (raw) {
+      const base = initialState();
+      const saved = { ...base, ...(JSON.parse(raw) as Partial<State>) };
+      // Demo data saved before summaries existed: give the sample updates their summary.
+      return {
+        ...saved,
+        products: saved.products.map((p) => {
+          const seed = base.products.find((s) => s.id === p.id);
+          return !p.updateSummary && seed?.updateSummary && (p.version ?? 1) === (seed.version ?? 1)
+            ? { ...p, updateSummary: seed.updateSummary }
+            : p;
+        }),
+      };
+    }
   } catch {
     // Storage can be blocked; the demo still works without it.
   }

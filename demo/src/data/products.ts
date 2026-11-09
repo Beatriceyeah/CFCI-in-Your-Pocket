@@ -1,4 +1,4 @@
-import type { Product } from "../types";
+import type { Product, UpdateSummary } from "../types";
 import { CFCI_STAFF } from "./users";
 import { SHOW_STUDENT_NAMES, TEAM_NAMES } from "./teamNames";
 
@@ -727,6 +727,21 @@ const UPDATED: Record<string, string> = {
   kinema: "New pilot results from the first clinic",
 };
 
+const UPDATE_SUMMARIES: Record<string, UpdateSummary> = {
+  "circadian-labs": {
+    headline: "Added the preclinical study plan and a pilot-site conversation",
+    points: ["Next steps: preclinical study plan added", "Traction: pilot-site conversation logged"],
+  },
+  "clinical-sentinel": {
+    headline: "Tightened the problem statement and added two customer interviews",
+    points: ["Problem statement rewritten", "Traction: 2 customer interviews added"],
+  },
+  kinema: {
+    headline: "New pilot results from the first clinic",
+    points: ["Traction: first clinic pilot results", "Next steps now build on the pilot findings"],
+  },
+};
+
 // Years are placeholders. The source summaries do not give them, and teams stay anonymous until they agree to be named.
 const YEARS = ["Year 1", "Year 2", "Year 3", "Year 4"];
 const withYears = (p: Product, index: number): Product => ({
@@ -744,6 +759,7 @@ export const SEED_PRODUCTS: Product[] = RAW_PRODUCTS.map(withYears).map((p, i) =
         ...p,
         version: UPDATED[p.id] ? 2 : 1,
         updateNote: UPDATED[p.id],
+        updateSummary: UPDATE_SUMMARIES[p.id],
         featuredUntil: p.id === "hf-digital-twins" ? new Date(Date.now() + 12 * DAY_MS).toISOString() : undefined,
         uploadedBy: {
           name: CFCI_STAFF[i % CFCI_STAFF.length]?.name ?? "CFCI staff",

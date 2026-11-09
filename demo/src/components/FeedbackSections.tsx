@@ -30,6 +30,8 @@ export function LensComment({
   const value = form.ratings[dim.key];
   const isUnsure = !!form.unsure[dim.key];
   const note = form.notes[dim.key] ?? "";
+  const lastValue = form.last?.ratings[dim.key];
+  const lastUnsure = !!form.last?.unsure[dim.key];
   const has = value !== undefined || isUnsure || note.trim() !== "";
   const who = state.session?.name ?? "You";
 
@@ -101,8 +103,13 @@ export function LensComment({
             aria-checked={value === n}
             aria-label={`${n} of 5, ${RATING_WORDS[n - 1]}`}
             onClick={() => form.rate(dim.key, n)}
+            title={lastValue === n && value !== n ? `Your score on version ${form.last?.version ?? 1}` : undefined}
             className={`h-10 flex-1 rounded-lg text-sm font-semibold ring-1 ring-inset transition ${
-              value === n ? "bg-royal text-white ring-royal" : "bg-surface text-muted ring-line hover:ring-royal"
+              value === n
+                ? "bg-royal text-white ring-royal"
+                : lastValue === n
+                  ? "bg-royal/15 text-navy ring-royal/40 hover:ring-royal"
+                  : "bg-surface text-muted ring-line hover:ring-royal"
             }`}
           >
             {n}
@@ -114,7 +121,11 @@ export function LensComment({
         aria-pressed={isUnsure}
         onClick={() => form.markUnsure(dim.key)}
         className={`self-start rounded-full px-3 py-1 text-sm font-medium ring-1 ring-inset ${
-          isUnsure ? "bg-navy text-white ring-navy" : "bg-surface text-muted ring-line"
+          isUnsure
+            ? "bg-navy text-white ring-navy"
+            : lastUnsure
+              ? "bg-royal/15 text-navy ring-royal/40"
+              : "bg-surface text-muted ring-line"
         }`}
       >
         {dim.unsureLabel}

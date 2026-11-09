@@ -6,6 +6,7 @@ import { AdminOverview } from "./pages/admin/AdminOverview";
 import { AdminPortfolio } from "./pages/admin/AdminPortfolio";
 import { AdminShare } from "./pages/admin/AdminShare";
 import { BrowsePage } from "./pages/external/BrowsePage";
+import { updatedForViewer, updatedPassedForViewer, updatedSavedForViewer } from "./lib/updates";
 import { MyReviewsPage } from "./pages/external/MyReviewsPage";
 import { LoginPage } from "./pages/LoginPage";
 import { MePage } from "./pages/MePage";
@@ -39,10 +40,9 @@ export function App() {
 
   const active = tabs[persona] ?? FIRST_TAB[persona];
   const go = (key: string) => setTabs((t) => ({ ...t, [persona]: key }));
-  // Saved to review later, with no feedback started yet.
-  const toReview = Object.values(state.swipes).filter(
-    (s) => s.direction === "right" && !state.evaluations.some((e) => e.productId === s.productId),
-  ).length;
+  // Saved, reviewed or passed ventures that the team has updated since the viewer last looked.
+  const updatedCount =
+    updatedForViewer(state).length + updatedSavedForViewer(state).length + updatedPassedForViewer(state).length;
   const teamProduct = ownedProduct(state);
   const newFeedback = teamProduct
     ? feedbackItems(computeStats(teamProduct, {}, state.evaluations).evaluations).filter(
@@ -54,7 +54,7 @@ export function App() {
   const NAV: Record<Persona, NavItem[]> = {
     external: [
       { key: "browse", label: "Browse", icon: "browse" },
-      { key: "reviews", label: "My reviews", icon: "list", badge: toReview },
+      { key: "reviews", label: "My reviews", icon: "list", badge: updatedCount },
       { key: "me", label: "Me", icon: "user" },
     ],
     team: [

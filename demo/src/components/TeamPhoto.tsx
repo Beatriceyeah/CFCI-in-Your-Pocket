@@ -1,3 +1,6 @@
+import group from "../assets/placeholder-group.jpg";
+import mascot from "../assets/placeholder-mascot.jpg";
+import portrait from "../assets/placeholder-portrait.jpg";
 import { students } from "../lib/team";
 import type { Product, TeamMember } from "../types";
 
@@ -38,23 +41,22 @@ export function TeamPhoto({ product, className = "size-16" }: { product: Product
   );
 }
 
-const AVATAR_TINT = ["from-royal to-navy", "from-accent-purple to-navy", "from-navy to-royal"];
+// Stand-in photos until builders upload their own. Each person always gets the same one (picked from their name).
+const SAMPLE_PHOTOS = [group, portrait, mascot];
 
-// One photo per builder. A placeholder silhouette until their own photo is uploaded.
-export function PersonAvatar({ member, index = 0, className = "size-14" }: { member: TeamMember; index?: number; className?: string }) {
-  if (member.photo) {
-    return <img src={member.photo} alt={member.name} className={`shrink-0 rounded-2xl object-cover ${className}`} />;
-  }
+const sampleFor = (name: string): string => {
+  let h = 0;
+  for (const ch of name) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  return SAMPLE_PHOTOS[h % SAMPLE_PHOTOS.length] ?? group;
+};
+
+// One photo per builder: their own upload, or one of the sample photos for now.
+export function PersonAvatar({ member, className = "size-14" }: { member: TeamMember; index?: number; className?: string }) {
   return (
-    <div
-      className={`shrink-0 overflow-hidden rounded-2xl bg-gradient-to-br ${AVATAR_TINT[index % AVATAR_TINT.length]} ${className}`}
-      role="img"
-      aria-label={`${member.name} (photo placeholder)`}
-    >
-      <svg viewBox="0 0 100 100" className="size-full text-white" aria-hidden="true">
-        <circle cx="50" cy="38" r="17" fill="currentColor" opacity="0.9" />
-        <ellipse cx="50" cy="94" rx="32" ry="30" fill="currentColor" opacity="0.9" />
-      </svg>
-    </div>
+    <img
+      src={member.photo || sampleFor(member.name)}
+      alt={member.photo ? member.name : `${member.name} (sample photo)`}
+      className={`shrink-0 rounded-2xl bg-line object-cover ${className}`}
+    />
   );
 }

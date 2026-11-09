@@ -1,4 +1,5 @@
 import { SEED_CONNECTIONS, SEED_LISTS } from "../data/seed";
+import { summarizeUpdate } from "../lib/updateSummary";
 import {
   CFCI_STAFF,
   DEFAULT_STAFF_ID,
@@ -71,17 +72,63 @@ export type Action =
   | { type: "feature_product"; productId: string; until: string }
   | { type: "unfeature_product"; productId: string }
   | { type: "record_open"; productId: string }
+  | { type: "mark_seen"; productId: string }
   | { type: "add_owner"; productId: string; userId: string }
   | { type: "request_connection"; connection: Connection }
   | { type: "respond_connection"; id: string; status: ConnectionStatus }
   | { type: "reset" };
 
+// The sample viewer already has three ventures that the teams have since updated: one saved to review later (it
+// simply opens at its latest version), one reviewed (it shows what changed and the viewer's last scores) and one
+// passed on (it stays under Not interested, marked as updated).
+const DAY = 86_400_000;
+const sampleSwipes = (): Record<string, SwipeRecord> => ({
+  "clinical-sentinel": {
+    productId: "clinical-sentinel",
+    direction: "left",
+    reason: "too_early",
+    revisit: false,
+    version: 1,
+    at: new Date(Date.now() - 22 * DAY).toISOString(),
+  },
+  "circadian-labs": {
+    productId: "circadian-labs",
+    direction: "right",
+    revisit: false,
+    version: 1,
+    at: new Date(Date.now() - 21 * DAY).toISOString(),
+  },
+});
+const sampleTakes = (): Evaluation[] => [
+  {
+    id: "eval-sample-kinema",
+    productId: "kinema",
+    viewerLabel: "Investor or alum",
+    ratings: { problem: 3, market: 4, edge: 3 },
+    notes: { problem: "Clear pain, but it was not obvious who pays." },
+    unsure: {},
+    reactions: { use: false, invest: false, intro: false },
+    introNote: "",
+    comment: "",
+    version: 1,
+    at: new Date(Date.now() - 20 * DAY).toISOString(),
+  },
+];
+
+// The decision a new swipe replaces (with the version seen then), for Undo.
+function previousSwipe(state: State, productId: string): SwipeRecord["prev"] {
+  const current = state.swipes[productId];
+  if (!current) return undefined;
+  const { prev: _older, ...swipe } = current;
+  return { swipe, seen: state.seen[productId] };
+}
+
 export const initialState = (): State => ({
   session: null,
   directions: [],
-  swipes: {},
-  evaluations: [],
-  // The sample viewer has opened these before, so their later updates show up as alerts.
+  swipes: sampleSwipes(),
+  evaluations: sampleTakes(),
+  // The product version this viewer last saw, so updates can be flagged.
   seen: { "circadian-labs": 1, kinema: 1 },
   products: SEED_PRODUCTS,
   changelog: [],
@@ -163,12 +210,23 @@ export function reducer(state: State, action: Action): State {
             revisit: false,
             version,
             at: new Date().toISOString(),
+            prev: previousSwipe(state, action.productId),
           },
         },
       };
     }
     case "undo_swipe": {
-      const { [action.productId]: _removed, ...rest } = state.swipes;
+      const { [action.productId]: current, ...rest } = state.swipes;
+      const { [action.productId]: _seen, ...seenRest } = state.seen;
+      // A venture that came round again goes back to the decision it had before this swipe.
+      if (current?.prev) {
+        const { swipe, seen } = current.prev;
+        return {
+          ...state,
+          swipes: { ...rest, [action.productId]: swipe },
+          seen: seen === undefined ? seenRest : { ...seenRest, [action.productId]: seen },
+        };
+      }
       return { ...state, swipes: rest };
     }
     case "tag_skip": {
@@ -211,6 +269,7 @@ export function reducer(state: State, action: Action): State {
                 daysSinceUpdate: 0,
                 version: (p.version ?? 1) + 1,
                 updateNote: action.note || p.updateNote,
+                updateSummary: summarizeUpdate(p, action.patch, action.note),
               }
             : p,
         ),
@@ -297,11 +356,19 @@ export function reducer(state: State, action: Action): State {
         ],
       };
     }
-    case "record_open": {
+    case "mark_seen": {
+      // Called when an overview closes: from then on this viewer has seen the latest version.
       const version = state.products.find((p) => p.id === action.productId)?.version ?? 1;
+      const related =
+        state.seen[action.productId] !== undefined ||
+        !!state.swipes[action.productId] ||
+        state.evaluations.some((e) => e.productId === action.productId);
+      if (!related || state.seen[action.productId] === version) return state;
+      return { ...state, seen: { ...state.seen, [action.productId]: version } };
+    }
+    case "record_open": {
       return {
         ...state,
-        seen: { ...state.seen, [action.productId]: version },
         opens: {
           ...state.opens,
           [action.productId]: (state.opens[action.productId] ?? 0) + 1,

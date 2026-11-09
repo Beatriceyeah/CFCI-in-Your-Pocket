@@ -7,6 +7,7 @@ import { Celebration } from "./Celebration";
 import { CoverArt } from "./CoverArt";
 import { FeedbackFinish, LensComment } from "./FeedbackSections";
 import { Icon } from "./Icon";
+import { UpdateSummaryCard } from "./UpdateSummaryCard";
 import { ProductOverview } from "./ProductOverview";
 import { Sheet } from "./Sheet";
 import { useEvaluation } from "./useEvaluation";
@@ -37,8 +38,24 @@ function FeedbackOverview({
   doneRef: MutableRefObject<() => void>;
   introAction?: ReactNode;
 }) {
-  const { state } = useStore();
+  const { state, dispatch } = useStore();
   const form = useEvaluation(product);
+
+  // Remember what this viewer had seen when the overview opened, so the summary stays put while they read.
+  const seenAtOpen = useRef(state.seen[product.id] ?? form.existing?.version ?? state.swipes[product.id]?.version);
+  const summary =
+    product.updateSummary ?? (product.updateNote ? { headline: product.updateNote, points: [] } : undefined);
+  const passed = state.swipes[product.id]?.direction === "left";
+  const hasChanged =
+    (!!form.existing || passed) && seenAtOpen.current !== undefined && seenAtOpen.current < (product.version ?? 1);
+
+  // Closing the overview counts as having seen the latest version.
+  useEffect(
+    () => () => {
+      dispatch({ type: "mark_seen", productId: product.id });
+    },
+    [dispatch, product.id],
+  );
   const [celebrating, setCelebrating] = useState(false);
   const helped = state.evaluations.length;
 
@@ -66,6 +83,7 @@ function FeedbackOverview({
 
   return (
     <>
+      {hasChanged && summary && <UpdateSummaryCard summary={summary} from={seenAtOpen.current ?? 1} to={product.version ?? 1} />}
       <ProductOverview product={product} lens={lens} />
       <FeedbackFinish form={form} onDone={() => doneRef.current()} action={introAction} />
       {celebrating && (
