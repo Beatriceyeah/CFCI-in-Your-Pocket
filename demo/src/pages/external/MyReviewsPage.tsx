@@ -133,8 +133,9 @@ export function MyReviewsPage() {
           Everything you add saves automatically, like a shared doc. Students read every note.
         </p>
         {helped > 0 && (
-          <p className="mt-2 rounded-2xl bg-interest/10 px-4 py-2 text-sm font-semibold text-interest-deep">
-            Thank you. You have helped {helped} {helped === 1 ? "team" : "teams"} so far.
+          <p className="mt-2 rounded-2xl bg-interest/10 px-4 py-2.5 text-sm font-semibold leading-snug text-interest-deep">
+            <span className="block text-base font-bold">Thank you!</span>
+            You're helping {helped} {helped === 1 ? "team" : "teams"} build better.
           </p>
         )}
       </div>

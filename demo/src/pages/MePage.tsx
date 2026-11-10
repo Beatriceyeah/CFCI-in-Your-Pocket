@@ -1,5 +1,7 @@
+import { useState } from "react";
 import { Chip, Pill } from "../components/Pill";
 import { DIRECTIONS } from "../data/dimensions";
+import { pickDemoUpdate } from "../lib/demoUpdate";
 import { useStore } from "../store/StoreContext";
 import { ConnectionsSection } from "./team/ConnectionsSection";
 import type { Provider } from "../types";
@@ -13,7 +15,19 @@ const PROVIDER: Record<Provider, string> = {
 export function MePage() {
   const { state, dispatch } = useStore();
   const session = state.session;
+  const [demoNote, setDemoNote] = useState<string | null>(null);
   if (!session) return null;
+
+  // Demo only: act as if a team had just posted an update to a venture this viewer follows.
+  const simulateUpdate = () => {
+    const update = pickDemoUpdate(state);
+    if (!update) {
+      setDemoNote("Save, review or pass on a venture first, then try again.");
+      return;
+    }
+    dispatch({ type: "update_product", productId: update.product.id, patch: update.patch, note: update.note });
+    setDemoNote(`${update.product.name} just posted an update. Find it under My reviews.`);
+  };
 
   return (
     <div className="flex flex-col gap-5">
@@ -80,6 +94,23 @@ export function MePage() {
         </button>
         <Pill>Demo build</Pill>
       </div>
+      {session.persona === "external" && (
+        <section className="flex flex-col gap-2 rounded-2xl bg-canvas p-4 ring-1 ring-line">
+          <p className="text-xs font-semibold uppercase tracking-wider text-muted">For the demo</p>
+          <button
+            type="button"
+            onClick={simulateUpdate}
+            className="self-start rounded-full px-4 py-2 text-sm font-semibold text-royal ring-1 ring-royal"
+          >
+            Simulate a team update
+          </button>
+          {demoNote && (
+            <p role="status" className="text-sm text-navy">
+              {demoNote}
+            </p>
+          )}
+        </section>
+      )}
     </div>
   );
 }
