@@ -70,7 +70,7 @@ export function IntroSheet({ product, onClose }: { product: Product; onClose: ()
         ) : (
           <>
             <label htmlFor="connect-message" className="text-sm font-semibold text-navy">
-              Add a note for the introduction (optional)
+              Add a note for the introduction
             </label>
             <textarea
               id="connect-message"

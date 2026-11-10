@@ -47,7 +47,7 @@ export function MePage() {
 
       {session.persona === "external" && (
         <section className="flex flex-col gap-3 rounded-2xl bg-surface p-5 ring-1 ring-line">
-          <h2 className="font-display text-lg font-semibold text-navy">Customize your feed (optional)</h2>
+          <h2 className="font-display text-lg font-semibold text-navy">Customize your feed</h2>
           <div className="flex flex-wrap gap-2">
             {DIRECTIONS.map((d) => {
               const on = state.directions.includes(d.key);

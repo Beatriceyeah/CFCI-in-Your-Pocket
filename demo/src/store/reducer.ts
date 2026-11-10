@@ -1,5 +1,5 @@
 import { SEED_CONNECTIONS, SEED_LISTS } from "../data/seed";
-import { summarizeUpdate } from "../lib/updateSummary";
+import { changedParts, summarizeUpdate } from "../lib/updateSummary";
 import {
   CFCI_STAFF,
   DEFAULT_STAFF_ID,
@@ -211,6 +211,8 @@ export function reducer(state: State, action: Action): State {
             version,
             at: new Date().toISOString(),
             prev: previousSwipe(state, action.productId),
+            // Passing on a venture that already came round again is a final no.
+            final: action.direction === "left" && state.swipes[action.productId]?.direction === "left" ? true : undefined,
           },
         },
       };
@@ -270,6 +272,7 @@ export function reducer(state: State, action: Action): State {
                 version: (p.version ?? 1) + 1,
                 updateNote: action.note || p.updateNote,
                 updateSummary: summarizeUpdate(p, action.patch, action.note),
+                updateChanges: changedParts(p, action.patch),
               }
             : p,
         ),

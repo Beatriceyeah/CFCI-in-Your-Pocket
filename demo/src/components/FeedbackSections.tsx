@@ -136,7 +136,7 @@ export function LensComment({
           rows={2}
           value={note}
           onChange={(e) => form.setNote(dim.key, e.target.value)}
-          placeholder={`${notePromptFor(dim, value)} (optional)`}
+          placeholder={notePromptFor(dim, value)}
           className="anim-fade rounded-lg border border-line bg-surface px-3 py-2 text-sm"
         />
       )}
@@ -183,14 +183,14 @@ export function FeedbackFinish({
           <input
             value={form.introNote}
             onChange={(e) => form.setIntroNote(e.target.value)}
-            placeholder="Who could you introduce them to? (optional)"
+            placeholder="Who could you introduce them to?"
             className="rounded-xl border border-line px-3 py-2 text-sm"
           />
         )}
       </section>
 
       <label className="flex flex-col gap-1.5" htmlFor="overall-comment">
-        <span className="font-display font-semibold text-navy">Anything else that would help the team? (optional)</span>
+        <span className="font-display font-semibold text-navy">Anything else that would help the team?</span>
         <textarea
           id="overall-comment"
           value={form.comment}

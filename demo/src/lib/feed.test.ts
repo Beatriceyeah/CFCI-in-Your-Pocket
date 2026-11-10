@@ -72,6 +72,17 @@ describe("buildFeed", () => {
     expect(ids(buildFeed({ products, ...none }))).toEqual(["n2", "n1"]); // plain recency order
   });
 
+  it("drops a venture passed on twice, unless the team updates it", () => {
+    const final = (id: string, version = 1): SwipeRecord => ({ ...swipe(id, "left", "2026-01-01", version), final: true });
+    const products = [make("gone"), make("back", { version: 2 }), make("normal")];
+    const feed = buildFeed({
+      products,
+      ...none,
+      swipes: { gone: final("gone"), back: final("back", 1), normal: swipe("normal", "left", "2026-02-01") },
+    });
+    expect(ids(feed)).toEqual(["back", "normal"]);
+  });
+
   it("respects the search box", () => {
     const products = [make("a"), make("b")];
     expect(ids(buildFeed({ products, ...none, matches: (p) => p.id === "b" }))).toEqual(["b"]);

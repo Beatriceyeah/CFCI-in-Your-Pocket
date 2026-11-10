@@ -1,4 +1,4 @@
-import type { Product, UpdateSummary } from "../types";
+import type { ChangedField, Product, UpdateChanges, UpdateSummary } from "../types";
 
 const same = (a: string[], b: string[]): boolean => a.length === b.length && a.every((x, i) => x === b[i]);
 
@@ -31,4 +31,13 @@ export function summarizeUpdate(before: Product, patch: Partial<Product>, note: 
     headline: text ? text.charAt(0).toUpperCase() + text.slice(1) : "The team posted an update",
     points: points.length ? points.slice(0, 3) : ["Small wording changes"],
   };
+}
+
+const MARKABLE: ChangedField[] = ["name", "tagline", "pitchProblem", "pitchSolution"];
+
+/** The parts of the overview that an update changed, so the overview can mark them for people who saw the old version. */
+export function changedParts(before: Product, patch: Partial<Product>): UpdateChanges {
+  const fields = MARKABLE.filter((f) => patch[f] !== undefined && patch[f] !== before[f]);
+  const added = (patch.next ?? []).filter((n) => !before.next.includes(n));
+  return { fields, items: added.length ? { next: added } : {} };
 }

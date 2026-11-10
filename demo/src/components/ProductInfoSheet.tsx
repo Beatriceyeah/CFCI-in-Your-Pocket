@@ -45,9 +45,9 @@ function FeedbackOverview({
   const seenAtOpen = useRef(state.seen[product.id] ?? form.existing?.version ?? state.swipes[product.id]?.version);
   const summary =
     product.updateSummary ?? (product.updateNote ? { headline: product.updateNote, points: [] } : undefined);
-  const passed = state.swipes[product.id]?.direction === "left";
-  const hasChanged =
-    (!!form.existing || passed) && seenAtOpen.current !== undefined && seenAtOpen.current < (product.version ?? 1);
+  // Anyone who has decided something about this venture (saved it, reviewed it or passed on it) is told what changed.
+  const followed = !!form.existing || !!state.swipes[product.id];
+  const hasChanged = followed && seenAtOpen.current !== undefined && seenAtOpen.current < (product.version ?? 1);
 
   // Closing the overview counts as having seen the latest version.
   useEffect(
@@ -83,8 +83,8 @@ function FeedbackOverview({
 
   return (
     <>
-      {hasChanged && summary && <UpdateSummaryCard summary={summary} from={seenAtOpen.current ?? 1} to={product.version ?? 1} />}
-      <ProductOverview product={product} lens={lens} />
+      {hasChanged && summary && <UpdateSummaryCard summary={summary} from={seenAtOpen.current ?? 1} to={product.version ?? 1} marked={!!product.updateChanges} />}
+      <ProductOverview product={product} lens={lens} changes={hasChanged ? product.updateChanges : undefined} />
       <FeedbackFinish form={form} onDone={() => doneRef.current()} action={introAction} />
       {celebrating && (
         <Celebration

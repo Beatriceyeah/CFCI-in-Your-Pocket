@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { SEED_PRODUCTS } from "../data/products";
-import { summarizeUpdate } from "./updateSummary";
+import { changedParts, summarizeUpdate } from "./updateSummary";
 
 const product = SEED_PRODUCTS[0]!;
 
@@ -32,5 +32,21 @@ describe("summarizeUpdate", () => {
 
   it("falls back when nothing visible changed", () => {
     expect(summarizeUpdate(product, {}, "").points).toEqual(["Small wording changes"]);
+  });
+});
+
+describe("changedParts", () => {
+  it("lists the changed text fields and the new next steps", () => {
+    const out = changedParts(product, {
+      tagline: "A new tagline",
+      pitchProblem: product.pitchProblem,
+      next: [...product.next, "A brand new step"],
+    });
+    expect(out.fields).toEqual(["tagline"]);
+    expect(out.items.next).toEqual(["A brand new step"]);
+  });
+
+  it("is empty when nothing visible changed", () => {
+    expect(changedParts(product, {})).toEqual({ fields: [], items: {} });
   });
 });

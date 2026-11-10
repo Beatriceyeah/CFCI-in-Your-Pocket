@@ -2,7 +2,18 @@ import type { UpdateSummary } from "../types";
 import { Icon } from "./Icon";
 
 /** Sits at the top of an overview the viewer has seen before: a short summary of what the team changed since. */
-export function UpdateSummaryCard({ summary, from, to }: { summary: UpdateSummary; from: number; to: number }) {
+export function UpdateSummaryCard({
+  summary,
+  from,
+  to,
+  marked = false,
+}: {
+  summary: UpdateSummary;
+  from: number;
+  to: number;
+  /** The changed parts are also marked in the overview below. */
+  marked?: boolean;
+}) {
   return (
     <section className="flex flex-col gap-1.5 rounded-xl bg-royal/5 p-3 ring-1 ring-royal/15" aria-label="What changed">
       <p className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-royal">
@@ -24,6 +35,7 @@ export function UpdateSummaryCard({ summary, from, to }: { summary: UpdateSummar
           ))}
         </ul>
       )}
+      {marked && <p className="text-xs text-muted">Changed parts are marked in green below.</p>}
     </section>
   );
 }

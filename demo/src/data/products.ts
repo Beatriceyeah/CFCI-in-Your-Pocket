@@ -1,4 +1,4 @@
-import type { Product, UpdateSummary } from "../types";
+import type { Product, UpdateChanges, UpdateSummary } from "../types";
 import { CFCI_STAFF } from "./users";
 import { SHOW_STUDENT_NAMES, TEAM_NAMES } from "./teamNames";
 
@@ -727,6 +727,37 @@ const UPDATED: Record<string, string> = {
   kinema: "New pilot results from the first clinic",
 };
 
+// What the sample updates actually changed in the listing, so the overview can mark it. The new points go first.
+const NEW_POINTS = {
+  circadianNext: "Finalize the preclinical study plan with a pilot-site clinician",
+  circadianTraction: "Opened a conversation with a pilot site about a first clinical study",
+  sentinelProblem:
+    "Hospitals are rolling out AI agents, and nothing independent stands between what an agent decides and what lands in the EHR.",
+  sentinelTraction: "Completed two customer interviews with hospital informatics leaders",
+  kinemaTraction: "First clinic pilot: residents used the headlamp in live cases and reviewed their own motion data",
+  kinemaNext: "Build the second-clinic rollout plan around the pilot findings",
+};
+const UPDATE_EDITS: Record<string, { patch: (p: Product) => Partial<Product>; changes: UpdateChanges }> = {
+  "circadian-labs": {
+    patch: (p) => ({
+      next: [NEW_POINTS.circadianNext, ...p.next],
+      traction: [NEW_POINTS.circadianTraction, ...p.traction],
+    }),
+    changes: { fields: [], items: { next: [NEW_POINTS.circadianNext], traction: [NEW_POINTS.circadianTraction] } },
+  },
+  "clinical-sentinel": {
+    patch: (p) => ({ pitchProblem: NEW_POINTS.sentinelProblem, traction: [NEW_POINTS.sentinelTraction, ...p.traction] }),
+    changes: { fields: ["pitchProblem"], items: { traction: [NEW_POINTS.sentinelTraction] } },
+  },
+  kinema: {
+    patch: (p) => ({
+      traction: [NEW_POINTS.kinemaTraction, ...p.traction],
+      next: [NEW_POINTS.kinemaNext, ...p.next],
+    }),
+    changes: { fields: [], items: { traction: [NEW_POINTS.kinemaTraction], next: [NEW_POINTS.kinemaNext] } },
+  },
+};
+
 const UPDATE_SUMMARIES: Record<string, UpdateSummary> = {
   "circadian-labs": {
     headline: "Added the preclinical study plan and a pilot-site conversation",
@@ -757,9 +788,11 @@ export const SEED_PRODUCTS: Product[] = RAW_PRODUCTS.map(withYears).map((p, i) =
   p.status === "live"
     ? {
         ...p,
+        ...UPDATE_EDITS[p.id]?.patch(p),
         version: UPDATED[p.id] ? 2 : 1,
         updateNote: UPDATED[p.id],
         updateSummary: UPDATE_SUMMARIES[p.id],
+        updateChanges: UPDATE_EDITS[p.id]?.changes,
         featuredUntil: p.id === "hf-digital-twins" ? new Date(Date.now() + 12 * DAY_MS).toISOString() : undefined,
         uploadedBy: {
           name: CFCI_STAFF[i % CFCI_STAFF.length]?.name ?? "CFCI staff",

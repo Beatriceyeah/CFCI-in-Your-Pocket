@@ -14,6 +14,14 @@ export interface MarketStat {
   note: string;
 }
 
+/** Which parts of the overview a team changed in its latest update, so they can be marked for people who saw the old one. */
+export type ChangedField = "name" | "tagline" | "pitchProblem" | "pitchSolution";
+export interface UpdateChanges {
+  fields: ChangedField[];
+  /** The new or reworded points, by section (matched by their text). */
+  items: Partial<Record<"edge" | "traction" | "next", string[]>>;
+}
+
 export interface UpdateSummary {
   headline: string;
   points: string[];
@@ -51,6 +59,8 @@ export interface Product {
   updateNote?: string;
   /** What changed in the latest update, written for investors who saw an earlier version. */
   updateSummary?: UpdateSummary;
+  /** The parts of the overview that the latest update changed (for marking them). */
+  updateChanges?: UpdateChanges;
   /** Data URL of the team photo, or empty until the team uploads one. */
   teamPhoto?: string;
   deckName?: string;
@@ -97,6 +107,8 @@ export interface SwipeRecord {
   /** The product version the viewer saw, so interest can be compared before and after an update. */
   version?: number;
   at: string;
+  /** Passed on a second time, after it came round again: it stays under Not interested and is not shown again unless the team updates it. */
+  final?: boolean;
   /** What this swipe replaced, so Undo can put the venture back where it was (a venture that came round again). */
   prev?: { swipe: Omit<SwipeRecord, "prev">; seen?: number };
 }

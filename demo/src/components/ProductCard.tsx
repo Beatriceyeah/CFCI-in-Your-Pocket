@@ -6,7 +6,7 @@ import { PersonAvatar } from "./TeamPhoto";
 function Line({ label, text }: { label: string; text: string }) {
   return (
     <div className="rounded-xl bg-canvas px-3 py-2">
-      <p className="text-[0.68rem] font-semibold uppercase tracking-wider text-royal">{label}</p>
+      <p className="text-[0.78rem] font-bold uppercase tracking-wider text-royal">{label}</p>
       <p className="pc-line-text line-clamp-3 text-[0.92rem] leading-snug">{text}</p>
     </div>
   );

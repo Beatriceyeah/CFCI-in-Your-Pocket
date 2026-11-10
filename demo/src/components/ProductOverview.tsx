@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { STAGE_NOTE } from "../data/dimensions";
-import type { DimensionKey, Product } from "../types";
+import type { ChangedField, DimensionKey, Product, UpdateChanges } from "../types";
 import { freshnessLabel } from "../lib/analytics";
 import { describeMember } from "../lib/team";
 import { PersonAvatar } from "./TeamPhoto";
@@ -13,21 +13,50 @@ const MARKET_LABEL: Record<string, string> = {
 
 const MAX_POINTS = 2;
 
-function Block({ title, children }: { title: string; children: ReactNode }) {
+// The green used everywhere for "the team changed this".
+const MARK = "rounded-lg bg-interest/10 ring-1 ring-interest/25";
+
+function UpdatedTag() {
+  return (
+    <span className="flex items-center gap-1.5 text-xs font-semibold normal-case tracking-normal text-interest-deep">
+      <span className="size-1.5 rounded-full bg-interest" aria-hidden="true" />
+      Recently updated
+    </span>
+  );
+}
+
+function Block({
+  title,
+  children,
+  updated = false,
+  tint = false,
+}: {
+  title: string;
+  children: ReactNode;
+  /** Show the "Recently updated" tag beside the title. */
+  updated?: boolean;
+  /** Mark the whole text of the block (for a block that is one piece of text). */
+  tint?: boolean;
+}) {
   return (
     <section className="flex flex-col gap-1.5">
-      <h3 className="text-xs font-semibold uppercase tracking-wider text-royal">{title}</h3>
-      {children}
+      <h3 className="flex items-center justify-between gap-2 text-[0.85rem] font-bold uppercase tracking-wider text-royal">
+        {title}
+        {updated && <UpdatedTag />}
+      </h3>
+      {tint ? <div className={`${MARK} px-3 py-2`}>{children}</div> : children}
     </section>
   );
 }
 
-function Points({ items }: { items: string[] }) {
+function Points({ items, changed = [] }: { items: string[]; changed?: string[] }) {
   if (!items.length) return <p className="text-sm text-muted">Not added yet.</p>;
+  // New points come first, so they are always among the ones shown.
+  const ordered = [...items.filter((t) => changed.includes(t)), ...items.filter((t) => !changed.includes(t))];
   return (
     <ul className="flex flex-col gap-1.5 text-[0.95rem] leading-snug">
-      {items.slice(0, MAX_POINTS).map((t) => (
-        <li key={t} className="flex gap-2.5">
+      {ordered.slice(0, Math.max(MAX_POINTS, changed.length)).map((t) => (
+        <li key={t} className={`flex gap-2.5 ${changed.includes(t) ? `${MARK} px-2.5 py-1.5` : ""}`}>
           <span className="mt-2 size-1.5 shrink-0 rounded-full bg-royal" />
           <span>{t}</span>
         </li>
@@ -41,16 +70,23 @@ function Points({ items }: { items: string[] }) {
 export function ProductOverview({
   product,
   lens,
+  changes,
 }: {
   product: Product;
   lens?: (key: DimensionKey) => ReactNode;
+  /** When given, the parts the team changed since the viewer last looked are marked. */
+  changes?: UpdateChanges;
 }) {
   const at = (key: DimensionKey) => lens?.(key) ?? null;
+  const isField = (f: ChangedField) => !!changes?.fields.includes(f);
+  const newPoints = (list: "edge" | "traction" | "next") => changes?.items[list] ?? [];
   return (
     <div className="flex flex-col gap-5">
       <header className="flex flex-col gap-1">
-        <h3 className="font-display text-2xl font-bold leading-tight text-navy">{product.name}</h3>
-        <p className="text-base text-muted">{product.tagline}</p>
+        <h3 className={`font-display text-2xl font-bold leading-tight text-navy ${isField("name") ? `${MARK} -mx-2 px-2` : ""}`}>
+          {product.name}
+        </h3>
+        <p className={`text-base text-muted ${isField("tagline") ? `${MARK} -mx-2 px-2 py-0.5` : ""}`}>{product.tagline}</p>
         <p className="text-xs font-semibold text-royal">
           Version {product.version ?? 1}
           <span className="font-medium text-muted">
@@ -87,10 +123,10 @@ export function ProductOverview({
         })}
       </ul>
 
-      <Block title="The problem">
+      <Block title="The problem" updated={isField("pitchProblem")} tint={isField("pitchProblem")}>
         <p className="text-[0.95rem] leading-snug">{product.pitchProblem}</p>
       </Block>
-      <Block title="The solution">
+      <Block title="The solution" updated={isField("pitchSolution")} tint={isField("pitchSolution")}>
         <p className="text-[0.95rem] leading-snug">{product.pitchSolution}</p>
       </Block>
       {at("problem")}
@@ -121,16 +157,16 @@ export function ProductOverview({
       {at("market")}
       {at("revenue")}
 
-      <Block title="Why it wins">
-        <Points items={product.edge} />
+      <Block title="Why it wins" updated={newPoints("edge").length > 0}>
+        <Points items={product.edge} changed={newPoints("edge")} />
       </Block>
       {at("edge")}
-      <Block title="Traction so far">
-        <Points items={product.traction} />
+      <Block title="Traction so far" updated={newPoints("traction").length > 0}>
+        <Points items={product.traction} changed={newPoints("traction")} />
       </Block>
       {at("readiness")}
-      <Block title="Next">
-        <Points items={product.next} />
+      <Block title="Next" updated={newPoints("next").length > 0}>
+        <Points items={product.next} changed={newPoints("next")} />
       </Block>
     </div>
   );

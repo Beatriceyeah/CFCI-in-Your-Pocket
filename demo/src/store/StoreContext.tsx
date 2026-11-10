@@ -15,9 +15,18 @@ function load(): State {
         ...saved,
         products: saved.products.map((p) => {
           const seed = base.products.find((s) => s.id === p.id);
-          return !p.updateSummary && seed?.updateSummary && (p.version ?? 1) === (seed.version ?? 1)
-            ? { ...p, updateSummary: seed.updateSummary }
-            : p;
+          if (!seed?.updateSummary || (p.version ?? 1) !== (seed.version ?? 1)) return p;
+          // Same version as the sample, so nobody has updated it since: take the sample's wording and what it changed.
+          return p.updateChanges && p.updateSummary
+            ? p
+            : {
+                ...p,
+                pitchProblem: seed.pitchProblem,
+                traction: seed.traction,
+                next: seed.next,
+                updateSummary: seed.updateSummary,
+                updateChanges: seed.updateChanges,
+              };
         }),
       };
     }
