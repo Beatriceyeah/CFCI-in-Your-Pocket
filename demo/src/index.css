@@ -34,6 +34,20 @@ body {
   @apply bg-canvas text-ink font-sans antialiased;
 }
 
+/* No lonely last word: headings break into evenly sized lines, paragraphs avoid a one-word last line. */
+h1,
+h2,
+h3,
+h4 {
+  text-wrap: balance;
+}
+
+p,
+li,
+dd {
+  text-wrap: pretty;
+}
+
 @keyframes sheet-up {
   from {
     transform: translateY(100%);
@@ -153,22 +167,17 @@ body {
   }
 }
 
-/* The product card sizes itself to the height it is given: the shorter it is, the less it shows. */
+/* The product card sizes itself to the height it is given. The pitch text is the last thing to lose lines: first the
+   builder rows get tighter, then the pitch goes from four to three to two lines. If even that does not fit, the card
+   scrolls. */
 .product-card {
   container-type: size;
   scrollbar-width: none;
 }
 
-@container (max-height: 500px) {
+@container (max-height: 480px) {
   .pc-line-text {
-    -webkit-line-clamp: 2;
-  }
-}
-
-@container (max-height: 440px) {
-  /* A single builder has room for more lines than a team of two or three. */
-  .pc-member-detail:not(.pc-single) {
-    -webkit-line-clamp: 1;
+    -webkit-line-clamp: 3;
   }
   .pc-team {
     gap: 0.5rem;
@@ -176,24 +185,63 @@ body {
   .pc-name {
     font-size: 1.05rem;
   }
-}
-
-/* Very short: one line per pitch, a smaller title and no status line. If even that does not fit, the card scrolls. */
-@container (max-height: 390px) {
-  .pc-top {
-    min-height: min-content;
-  }
-  .pc-line-text,
-  .pc-member-detail {
+  .pc-member-detail:not(.pc-single) {
     -webkit-line-clamp: 1;
   }
+}
+
+@container (max-height: 420px) {
+  .pc-built-label {
+    display: none;
+  }
+  .pc-team img {
+    width: 2.5rem;
+    height: 2.5rem;
+  }
+  .pc-single {
+    -webkit-line-clamp: 2;
+  }
+}
+
+@container (max-height: 370px) {
+  .pc-meta {
+    min-height: 0;
+  }
+  .pc-body {
+    gap: 0.5rem;
+    padding-block: 0.25rem;
+  }
+  .pc-pitches {
+    gap: 0.5rem;
+  }
   .pc-title {
-    font-size: 1.25rem;
+    font-size: 1.35rem;
   }
   .pc-status {
     display: none;
   }
+  .pc-line-text {
+    -webkit-line-clamp: 2;
+  }
   .pc-team {
-    gap: 0.375rem;
+    gap: 0.25rem;
+  }
+  .pc-built {
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+  }
+  .pc-team img {
+    width: 2rem;
+    height: 2rem;
+  }
+  .pc-name {
+    font-size: 1rem;
+  }
+}
+
+@container (max-height: 310px) {
+  .pc-line-text,
+  .pc-member-detail {
+    -webkit-line-clamp: 1;
   }
 }
