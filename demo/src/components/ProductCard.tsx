@@ -41,7 +41,7 @@ export function ProductCard({
         ? "size-[clamp(2.75rem,10cqh,3.75rem)]"
         : "size-[clamp(2.25rem,8cqh,3rem)]";
   return (
-    <article className="product-card flex h-full flex-col overflow-y-auto overflow-x-hidden rounded-card bg-surface shadow-lg ring-1 ring-line">
+    <article data-team={Math.min(count, 3)} className="product-card flex h-full flex-col overflow-y-auto overflow-x-hidden rounded-card bg-surface shadow-lg ring-1 ring-line">
       <div className="pc-top flex min-h-min flex-1 flex-col px-5 pt-4">
         <div className="pc-meta flex min-h-7 items-start justify-between gap-3">
           <p className="pc-status min-w-0 pt-1 text-xs leading-snug text-muted">

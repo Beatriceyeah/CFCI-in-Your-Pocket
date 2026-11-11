@@ -190,6 +190,13 @@ dd {
   }
 }
 
+@container (max-height: 480px) {
+  /* A team of three needs every pixel: drop the "Built by" label so the last builder is not cut off. */
+  .product-card[data-team="3"] .pc-built-label {
+    display: none;
+  }
+}
+
 @container (max-height: 420px) {
   .pc-built-label {
     display: none;
