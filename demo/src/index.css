@@ -153,21 +153,6 @@ body {
   }
 }
 
-@keyframes toast-countdown {
-  from {
-    transform: scaleX(1);
-  }
-  to {
-    transform: scaleX(0);
-  }
-}
-
-.toast-countdown {
-  animation-name: toast-countdown;
-  animation-timing-function: linear;
-  animation-fill-mode: forwards;
-}
-
 /* The product card sizes itself to the height it is given: the shorter it is, the less it shows. */
 .product-card {
   container-type: size;

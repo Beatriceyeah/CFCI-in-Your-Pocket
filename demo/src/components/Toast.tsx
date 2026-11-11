@@ -4,8 +4,7 @@ import { Icon } from "./Icon";
 const FADE_MS = 400;
 
 /**
- * A small note that floats over the top of the page: it fades out by itself, shows a countdown bar, and can be
- * closed. Callers place it; `seconds` can be raised while the person is still interacting with it.
+ * A small note that floats over the top of the page: it fades out by itself and can be closed. Callers place it; `seconds` can be raised while the person is still interacting with it.
  */
 export function Toast({
   onDismiss,
@@ -45,12 +44,6 @@ export function Toast({
         <Icon name="close" className="size-4" />
       </button>
       {children}
-      <span
-        key={seconds}
-        className="toast-countdown absolute inset-x-0 bottom-0 h-1 origin-left bg-interest"
-        style={{ animationDuration: `${seconds}s` }}
-        aria-hidden="true"
-      />
     </div>
   );
 }

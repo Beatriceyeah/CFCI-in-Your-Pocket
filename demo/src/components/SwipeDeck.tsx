@@ -22,6 +22,8 @@ interface Props {
   onIntro: (product: Product) => void;
   /** When set, replaces the action buttons for a moment. */
   notice?: ReactNode;
+  /** A line of text between the card and the buttons (for example, that ventures you passed on are coming round). */
+  caption?: ReactNode;
   /** Set right after Undo: the card with this id flies back in from the side it left. */
   returning?: { productId: string; direction: "left" | "right" } | null;
 }
@@ -35,6 +37,7 @@ export function SwipeDeck({
   updated,
   onIntro,
   notice,
+  caption,
   returning,
 }: Props) {
   const [dx, setDx] = useState(0);
@@ -141,6 +144,7 @@ export function SwipeDeck({
         </div>
       </div>
 
+      {caption}
       {notice ? (
         <div className="flex min-h-16 items-center justify-center">
           {notice}

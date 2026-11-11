@@ -109,7 +109,7 @@ export function BrowsePage({ onGoReviews }: Props) {
   // Both outcomes float at the top in the same style. Not interested only says "Why?" until it is tapped.
   const floatNote =
     toast?.kind === "skipped" ? (
-      <Toast key={toast.id} onDismiss={dismiss} seconds={skipTagged ? 1.5 : reasonsOpen ? 8 : 4}>
+      <Toast key={toast.id} onDismiss={dismiss} seconds={skipTagged ? 1.5 : reasonsOpen ? 6 : 2}>
         {skipTagged ? (
           <p className="pr-8 font-semibold">Thanks, noted.</p>
         ) : (
@@ -153,7 +153,7 @@ export function BrowsePage({ onGoReviews }: Props) {
         )}
       </Toast>
     ) : toast?.kind === "saved" ? (
-      <Toast key={toast.id} onDismiss={dismiss} seconds={4}>
+      <Toast key={toast.id} onDismiss={dismiss} seconds={2}>
         <p className="min-w-0 pr-7 leading-snug">
           <span className="text-base font-semibold">{toast.product.name}</span>{" "}
           <span className="text-sm text-white/70">added to My reviews</span>
@@ -277,17 +277,6 @@ export function BrowsePage({ onGoReviews }: Props) {
           ))}
         </ul>
       ) : queue.length ? (
-        <>
-        {loopNotice && (
-          <p
-            key={loopNotice}
-            role="status"
-            className="anim-fade flex items-center gap-2 rounded-xl bg-royal/5 px-3 py-2 text-[0.82rem] leading-snug text-navy ring-1 ring-royal/15"
-          >
-            <Icon name="refresh" className="size-4 shrink-0 text-royal" />
-            {loopNotice}
-          </p>
-        )}
         <SwipeDeck
           products={queue}
           onSwipe={swipe}
@@ -297,8 +286,20 @@ export function BrowsePage({ onGoReviews }: Props) {
           featured={featured}
           updated={updated}
           returning={returning}
+          // Below the card, so the pop-up that floats over the top of the page never covers it.
+          caption={
+            loopNotice ? (
+              <p
+                key={loopNotice}
+                role="status"
+                className="anim-fade -mb-1 px-2 text-center text-[0.82rem] leading-snug text-navy"
+              >
+                <Icon name="refresh" className="mr-1.5 inline size-4 align-text-bottom text-royal" />
+                {loopNotice}
+              </p>
+            ) : undefined
+          }
         />
-        </>
       ) : (
         <div className="flex flex-1 flex-col items-center justify-center gap-3 rounded-card bg-surface p-8 text-center ring-1 ring-line">
           <h2 className="font-display text-xl font-bold text-navy">
