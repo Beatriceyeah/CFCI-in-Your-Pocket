@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { helpedCount } from "../../lib/helped";
 import { IntroButton, IntroSheet } from "../../components/ConnectBox";
 import { CoverArt } from "../../components/CoverArt";
 import { Pill } from "../../components/Pill";
@@ -57,7 +56,7 @@ export function MyReviewsPage() {
     ...passedAll.filter((s) => isUpdatedPassed(s.productId)),
     ...passedAll.filter((s) => !isUpdatedPassed(s.productId)),
   ];
-  const helped = helpedCount(state.evaluations);
+  const helped = state.evaluations.length;
 
   // Land where something changed.
   const [tab, setTab] = useState<Tab>(() =>

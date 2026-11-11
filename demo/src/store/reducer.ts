@@ -78,43 +78,6 @@ export type Action =
   | { type: "respond_connection"; id: string; status: ConnectionStatus }
   | { type: "reset" };
 
-// The sample viewer already has three ventures that the teams have since updated: one saved to review later (it
-// simply opens at its latest version), one reviewed (it shows what changed and the viewer's last scores) and one
-// passed on (it stays under Not interested, marked as updated).
-const DAY = 86_400_000;
-const sampleSwipes = (): Record<string, SwipeRecord> => ({
-  "clinical-sentinel": {
-    productId: "clinical-sentinel",
-    direction: "left",
-    reason: "too_early",
-    revisit: false,
-    version: 1,
-    at: new Date(Date.now() - 22 * DAY).toISOString(),
-  },
-  "circadian-labs": {
-    productId: "circadian-labs",
-    direction: "right",
-    revisit: false,
-    version: 1,
-    at: new Date(Date.now() - 21 * DAY).toISOString(),
-  },
-});
-const sampleTakes = (): Evaluation[] => [
-  {
-    id: "eval-sample-kinema",
-    productId: "kinema",
-    viewerLabel: "Investor or alum",
-    ratings: { problem: 3, market: 4, edge: 3 },
-    notes: { problem: "Clear pain, but it was not obvious who pays." },
-    unsure: {},
-    reactions: { use: false, invest: false, intro: false },
-    introNote: "",
-    comment: "",
-    version: 1,
-    at: new Date(Date.now() - 20 * DAY).toISOString(),
-  },
-];
-
 // The decision a new swipe replaces (with the version seen then), for Undo.
 function previousSwipe(state: State, productId: string): SwipeRecord["prev"] {
   const current = state.swipes[productId];
@@ -126,10 +89,11 @@ function previousSwipe(state: State, productId: string): SwipeRecord["prev"] {
 export const initialState = (): State => ({
   session: null,
   directions: [],
-  swipes: sampleSwipes(),
-  evaluations: sampleTakes(),
+  // Nothing is preset: no saved, reviewed or passed ventures until the viewer does something.
+  swipes: {},
+  evaluations: [],
   // The product version this viewer last saw, so updates can be flagged.
-  seen: { "circadian-labs": 1, kinema: 1 },
+  seen: {},
   products: SEED_PRODUCTS,
   changelog: [],
   feedbackStatus: {},

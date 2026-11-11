@@ -51,8 +51,8 @@ Sign-in is simulated. Once signed in, the **Demo:** pill in the header switches 
   top of its list. Reviewed is one list: updated first, then the rest with the most recently edited review on top
   (button "Edit"). It does not matter to you whether a review is complete; only the team and CFCI see that. The tab that holds an
   update shows a dot, and the My reviews icon counts them all. Opening one counts as looking, and the marks go away.
-  The sample viewer starts out with one venture of each kind (Circadian Labs saved, Kinema reviewed, Clinical
-  Sentinel passed on), all since updated, so this can be seen right away.
+  Nothing is preset: a new viewer has no saved, reviewed or passed ventures, so My reviews is empty and every count
+  starts at 0 until you act. To see an update, save or review a venture and use "Simulate a team update" (below).
 - **What changed.** If you saved, reviewed or passed on a venture and the team has updated it since, its overview opens
   with a short "AI summary" of what changed (in the demo it is worked out from the team's note and the fields they
   edited). Closing the overview counts as having seen it. Your scores from before the update stay visible as a

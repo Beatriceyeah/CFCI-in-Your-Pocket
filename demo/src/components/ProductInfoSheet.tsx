@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState, type MutableRefObject, type ReactNode } from "react";
-import { helpedCount } from "../lib/helped";
 import { DIMENSIONS } from "../data/dimensions";
 import { isFeatured } from "../lib/order";
 import { useStore } from "../store/StoreContext";
@@ -58,7 +57,7 @@ function FeedbackOverview({
     [dispatch, product.id],
   );
   const [celebrating, setCelebrating] = useState(false);
-  const helped = helpedCount(state.evaluations);
+  const helped = state.evaluations.length;
 
   // Only an unfinished review opens a comment by itself: the first of the three core lenses that has no answer yet.
   const autoKey = useRef(focus && form.existing?.partial ? form.missing[0]?.key : undefined);
