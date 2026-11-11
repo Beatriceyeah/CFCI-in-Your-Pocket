@@ -66,7 +66,8 @@ Sign-in is simulated. Once signed in, the **Demo:** pill in the header switches 
   Review later.
 - Engagement numbers (views, evaluations, interest) are generated from a fixed seed so the dashboard has
   something to show. Anything you do in the demo is added on top.
-- **Simulate a team update.** On the Me tab (investor view) the "Simulate a team update" button acts as if a team had
+- **Simulate a team update.** To see an update without waiting for a team, save or review a venture: My reviews then
+  shows a "For the demo" block with a "Simulate a team update" button (the same button is on the Me tab). It acts as if a team had
   just posted an update to a venture you follow (one you reviewed first, then one you saved, then one you passed on).
   It reworks the solution line and adds a next step, so My reviews shows a new update and the overview marks the
   changed parts. Handy for a demo; the summary and marks are generated the same way as for a real team update.

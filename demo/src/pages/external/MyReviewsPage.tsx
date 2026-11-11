@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { IntroButton, IntroSheet } from "../../components/ConnectBox";
 import { CoverArt } from "../../components/CoverArt";
+import { DemoUpdate } from "../../components/DemoUpdate";
 import { Pill } from "../../components/Pill";
 import { ProductInfoSheet } from "../../components/ProductInfoSheet";
 import { SKIP_REASONS } from "../../data/dimensions";
+import { pickDemoUpdate } from "../../lib/demoUpdate";
 import { updatedForViewer, updatedPassedForViewer, updatedSavedForViewer } from "../../lib/updates";
 import { useStore } from "../../store/StoreContext";
 import type { Product } from "../../types";
@@ -57,6 +59,8 @@ export function MyReviewsPage() {
     ...passedAll.filter((s) => !isUpdatedPassed(s.productId)),
   ];
   const helped = state.evaluations.length;
+  // The demo block only appears once there is a venture an update could be posted to.
+  const followsAny = pickDemoUpdate(state) !== null;
 
   // Land where something changed.
   const [tab, setTab] = useState<Tab>(() =>
@@ -139,6 +143,23 @@ export function MyReviewsPage() {
           </p>
         )}
       </div>
+      {followsAny && (
+        <section className="flex flex-col gap-2 rounded-2xl bg-canvas p-4 ring-1 ring-line" aria-label="For the demo">
+          <p className="text-xs font-semibold uppercase tracking-wider text-muted">For the demo</p>
+          <DemoUpdate
+            explain
+            onPosted={(p) =>
+              setTab(
+                state.evaluations.some((e) => e.productId === p.id)
+                  ? "reviewed"
+                  : state.swipes[p.id]?.direction === "right"
+                    ? "later"
+                    : "no",
+              )
+            }
+          />
+        </section>
+      )}
       <div className="grid grid-cols-3 gap-1 rounded-full bg-surface p-1 ring-1 ring-line" role="tablist">
         {tabs.map((t) => (
           <button
